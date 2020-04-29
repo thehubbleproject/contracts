@@ -1,0 +1,470 @@
+{
+  "contractName": "Logger",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "batch_id",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "committer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "stateRoot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "txRoot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "stakeSlashed",
+          "type": "uint256"
+        }
+      ],
+      "name": "BatchRollback",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "left",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "right",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DepositLeafMerged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "AccountID",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "destination",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "token",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "accountHash",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes",
+          "name": "pubkey",
+          "type": "bytes"
+        }
+      ],
+      "name": "DepositQueued",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "depositSubTreeRoot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "pathToSubTree",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "newBalanceRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "DepositsFinalised",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "committer",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "txroot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "bytes32",
+          "name": "updatedRoot",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "NewBatch",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenType",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenContract",
+          "type": "address"
+        }
+      ],
+      "name": "RegisteredToken",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "tokenContract",
+          "type": "address"
+        }
+      ],
+      "name": "RegistrationRequest",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "totalBatchesSlashed",
+          "type": "uint256"
+        }
+      ],
+      "name": "RollbackFinalisation",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "committed",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "batch_id",
+          "type": "uint256"
+        }
+      ],
+      "name": "StakeWithdraw",
+      "type": "event"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "batch_id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "committer",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "stateRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "stakeSlashed",
+          "type": "uint256"
+        }
+      ],
+      "name": "logBatchRollback",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "depositSubTreeRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pathToSubTree",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newBalanceRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "logDepositFinalised",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "left",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "right",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "newRoot",
+          "type": "bytes32"
+        }
+      ],
+      "name": "logDepositLeafMerged",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "accountID",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "destination",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "token",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "accountHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "pubkey",
+          "type": "bytes"
+        }
+      ],
+      "name": "logDepositQueued",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "committer",
+          "type": "address"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "txroot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "updatedRoot",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "logNewBatch",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenType",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "tokenContract",
+          "type": "address"
+        }
+      ],
+      "name": "logRegisteredToken",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tokenContract",
+          "type": "address"
+        }
+      ],
+      "name": "logRegistrationRequest",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalBatchesSlashed",
+          "type": "uint256"
+        }
+      ],
+      "name": "logRollbackFinalisation",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "committed",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "batch_id",
+          "type": "uint256"
+        }
+      ],
+      "name": "logStakeWithdraw",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5061085c806100206000396000f3fe608060405234801561001057600080fd5b50600436106100935760003560e01c8063b4ba86b311610066578063b4ba86b31461025b578063b94be668146102c7578063cea4592f14610309578063d54404ae1461036b578063dbd63fb7146103c357610093565b80634c7637d21461009857806356901d5a146100dc57806388870639146101df578063aeedf0c71461022d575b600080fd5b6100da600480360360208110156100ae57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610405565b005b6101dd600480360360c08110156100f257600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190803590602001909291908035906020019064010000000081111561015757600080fd5b82018360208201111561016957600080fd5b8035906020019184600183028401116401000000008311171561018b57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f82011690508083019250505050505050919291929050505061046b565b005b61022b600480360360408110156101f557600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610563565b005b6102596004803603602081101561024357600080fd5b81019080803590602001909291905050506105d2565b005b6102c5600480360360a081101561027157600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff16906020019092919080359060200190929190803590602001909291908035906020019092919050505061060c565b005b610307600480360360608110156102dd57600080fd5b81019080803590602001909291908035906020019092919080359060200190929190505050610696565b005b6103696004803603608081101561031f57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190803590602001909291905050506106e2565b005b6103c16004803603606081101561038157600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190505050610763565b005b610403600480360360608110156103d957600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506107db565b005b7fdc79fc57451962cfe3916e686997a49229af75ce2055deb4c0f0fdf3d5d2e7c181604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a150565b7f5e3c736713ea7acda22f3939c97804d64b57ea194c562d8e5359eda538c7ebfa868686868686604051808781526020018673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200185815260200184815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b8381101561051c578082015181840152602081019050610501565b50505050905090810190601f1680156105495780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390a1505050505050565b7f5dbaa701a7acef513f72a61799f7e50f4653f462b9f780d88d1b9bec89de21688282604051808381526020018273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019250505060405180910390a15050565b7f8efd02dfe309f172ea08425236aa43cec05abc25ebbb9cd4ed1de0d5048fc91a816040518082815260200191505060405180910390a150565b7fff0d01a3ea09eec8d9dc11b606f70fbf5aa373d5647db792e5886fc4285c38fc8585858585604051808681526020018573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018481526020018381526020018281526020019550505050505060405180910390a15050505050565b7f70c2b28c317ffe78d554d6d3027adf905ad3c4dd5d7511cf0898667e90b0298783838360405180848152602001838152602001828152602001935050505060405180910390a1505050565b7f1914387dd72c107202016df3d09390ff777fa6399bf12f0e5a0ed11a0b0650bb84848484604051808573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200184815260200183815260200182815260200194505050505060405180910390a150505050565b7fb00cb3d8b4494806e139df1041902f1984526ffe765fa4d7e12d64f4a47362fe838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001838152602001828152602001935050505060405180910390a1505050565b7f3ef414c5acdc760eeb769e53a23288afa7ca68aa4f0391d7fdc076b9d16b659183838360405180848152602001838152602001828152602001935050505060405180910390a150505056fea265627a7a723158204d5ead8eb4b2ed3effa4ba65d4b6e1131933f9fe12c12a20148864f3e5ed5dbd64736f6c634300050f0032",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100935760003560e01c8063b4ba86b311610066578063b4ba86b31461025b578063b94be668146102c7578063cea4592f14610309578063d54404ae1461036b578063dbd63fb7146103c357610093565b80634c7637d21461009857806356901d5a146100dc57806388870639146101df578063aeedf0c71461022d575b600080fd5b6100da600480360360208110156100ae57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610405565b005b6101dd600480360360c08110156100f257600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190803590602001909291908035906020019064010000000081111561015757600080fd5b82018360208201111561016957600080fd5b8035906020019184600183028401116401000000008311171561018b57600080fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f82011690508083019250505050505050919291929050505061046b565b005b61022b600480360360408110156101f557600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610563565b005b6102596004803603602081101561024357600080fd5b81019080803590602001909291905050506105d2565b005b6102c5600480360360a081101561027157600080fd5b8101908080359060200190929190803573ffffffffffffffffffffffffffffffffffffffff16906020019092919080359060200190929190803590602001909291908035906020019092919050505061060c565b005b610307600480360360608110156102dd57600080fd5b81019080803590602001909291908035906020019092919080359060200190929190505050610696565b005b6103696004803603608081101561031f57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190803590602001909291905050506106e2565b005b6103c16004803603606081101561038157600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919080359060200190929190505050610763565b005b610403600480360360608110156103d957600080fd5b810190808035906020019092919080359060200190929190803590602001909291905050506107db565b005b7fdc79fc57451962cfe3916e686997a49229af75ce2055deb4c0f0fdf3d5d2e7c181604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390a150565b7f5e3c736713ea7acda22f3939c97804d64b57ea194c562d8e5359eda538c7ebfa868686868686604051808781526020018673ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200185815260200184815260200183815260200180602001828103825283818151815260200191508051906020019080838360005b8381101561051c578082015181840152602081019050610501565b50505050905090810190601f1680156105495780820380516001836020036101000a031916815260200191505b5097505050505050505060405180910390a1505050505050565b7f5dbaa701a7acef513f72a61799f7e50f4653f462b9f780d88d1b9bec89de21688282604051808381526020018273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019250505060405180910390a15050565b7f8efd02dfe309f172ea08425236aa43cec05abc25ebbb9cd4ed1de0d5048fc91a816040518082815260200191505060405180910390a150565b7fff0d01a3ea09eec8d9dc11b606f70fbf5aa373d5647db792e5886fc4285c38fc8585858585604051808681526020018573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018481526020018381526020018281526020019550505050505060405180910390a15050505050565b7f70c2b28c317ffe78d554d6d3027adf905ad3c4dd5d7511cf0898667e90b0298783838360405180848152602001838152602001828152602001935050505060405180910390a1505050565b7f1914387dd72c107202016df3d09390ff777fa6399bf12f0e5a0ed11a0b0650bb84848484604051808573ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200184815260200183815260200182815260200194505050505060405180910390a150505050565b7fb00cb3d8b4494806e139df1041902f1984526ffe765fa4d7e12d64f4a47362fe838383604051808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001838152602001828152602001935050505060405180910390a1505050565b7f3ef414c5acdc760eeb769e53a23288afa7ca68aa4f0391d7fdc076b9d16b659183838360405180848152602001838152602001828152602001935050505060405180910390a150505056fea265627a7a723158204d5ead8eb4b2ed3effa4ba65d4b6e1131933f9fe12c12a20148864f3e5ed5dbd64736f6c634300050f0032",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
