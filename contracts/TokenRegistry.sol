@@ -5,9 +5,7 @@ import {NameRegistry as Registry} from "./NameRegistry.sol";
 import {ParamManager} from "./libs/ParamManager.sol";
 import {POB} from "./POB.sol";
 
-
 contract TokenRegistry {
-    address public rollupNC;
     Logger public logger;
     mapping(address => bool) public pendingRegistrations;
     mapping(uint256 => address) public registeredTokens;
