@@ -20,6 +20,6 @@ contract SpokeRegistry {
     function registerSpoke(address spoke) public {
         numSpokes++;
         registeredSpokes[numSpokes] = spoke;
-        logger.logSpokeRegistration(tokenContract, spokeID);
+        logger.logSpokeRegistration(spoke, numSpokes);
     }
 }

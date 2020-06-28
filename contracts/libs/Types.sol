@@ -1,6 +1,5 @@
 pragma solidity ^0.5.15;
 
-
 /**
  * @title DataTypes
  */
@@ -73,5 +72,12 @@ library Types {
     struct PDAMerkleProof {
         PDAInclusionProof _pda;
         bytes32[] siblings;
+    }
+
+    struct MassMigrationMetaInformation {
+        uint256[] spokeIDs;
+        bytes32[] spokeRoots;
+        uint256[] tokenIDs;
+        uint256[] tokenAmounts;
     }
 }

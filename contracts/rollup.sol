@@ -38,7 +38,8 @@ contract RollupSetup {
 
     IFraudProof public fraudProof;
 
-    bytes32 public constant ZERO_BYTES32 = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    bytes32
+        public constant ZERO_BYTES32 = 0x0000000000000000000000000000000000000000000000000000000000000000;
     address payable constant BURN_ADDRESS = 0x0000000000000000000000000000000000000000;
     Governance public governance;
 
@@ -186,12 +187,12 @@ contract RollupHelpers is RollupSetup {
 
             // delete batch
             delete batches[i];
-            
+
             // queue deposits again
             depositManager.enqueue(batch.depositTree);
-            
+
             totalSlashings++;
-            
+
             logger.logBatchRollback(
                 i,
                 batch.committer,
@@ -257,6 +258,33 @@ contract Rollup is RollupHelpers {
         onlyCoordinator
         isNotRollingBack
     {
+        require(
+            msg.value >= governance.STAKE_AMOUNT(),
+            "Not enough stake committed"
+        );
+
+        require(
+            _txs.length <= governance.MAX_TXS_PER_BATCH(),
+            "Batch contains more transations than the limit"
+        );
+        bytes32 txRoot = merkleUtils.getMerkleRoot(_txs);
+        require(
+            txRoot != ZERO_BYTES32,
+            "Cannot submit a transaction with no transactions"
+        );
+        addNewBatch(txRoot, _updatedRoot);
+    }
+
+    /**
+     * @notice Submits a new batch to batches
+     * @param _txs Compressed transactions .
+     * @param _updatedRoot New balance tree root after processing all the transactions
+     */
+    function submitBatchWithMassMigrations(
+        bytes[] calldata _txs,
+        bytes32 _updatedRoot,
+        Types.MassMigrationMetaInformation calldata metaInfo
+    ) external payable onlyCoordinator isNotRollingBack {
         require(
             msg.value >= governance.STAKE_AMOUNT(),
             "Not enough stake committed"
@@ -420,14 +448,15 @@ contract Rollup is RollupHelpers {
             bool
         )
     {
-        return fraudProof.processTx(
-            _balanceRoot,
-            _accountsRoot,
-            _tx,
-            _from_pda_proof,
-            _from_merkle_proof,
-            _to_merkle_proof
-        );
+        return
+            fraudProof.processTx(
+                _balanceRoot,
+                _accountsRoot,
+                _tx,
+                _from_pda_proof,
+                _from_merkle_proof,
+                _to_merkle_proof
+            );
     }
 
     /**

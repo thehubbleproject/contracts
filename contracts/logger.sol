@@ -129,6 +129,6 @@ contract Logger {
     event NewSpokeRegistration(address, uint256);
 
     function logSpokeRegistration(address spokeChain, uint256 spokeID) public {
-        emit NewSpokeRegistration(spokeID, spokeChain);
+        emit NewSpokeRegistration(spokeChain, spokeID);
     }
 }
