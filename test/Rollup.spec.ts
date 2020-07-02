@@ -78,6 +78,7 @@ contract("Rollup", async function (accounts) {
       0,
       Bob.TokenType
     );
+
     await depositManagerInstance.depositFor(
       Bob.Address,
       Bob.Amount,
@@ -91,7 +92,7 @@ contract("Rollup", async function (accounts) {
     var path = "001";
     var defaultHashes = await utils.defaultHashes(4);
     var siblingsInProof = [
-      utils.getParentLeaf(coordinator, defaultHashes[0]),
+      utils.getParentLeaf(coordinator, coordinator),
       defaultHashes[2],
       defaultHashes[3],
     ];
@@ -109,20 +110,10 @@ contract("Rollup", async function (accounts) {
       siblings: siblingsInProof,
     };
 
-    var newRoot = await utils.genMerkleRootFromSiblings(
-      siblingsInProof,
-      path,
-      utils.getParentLeaf(AliceAccountLeaf, BobAccountLeaf)
-    );
-
-    // TODO make this 0
-    var txs: string[] = [
-      "0x012893657d8eb2efad4de0a91bcd0e39ad9837745dec3ea923737ea803fc8e3d",
-    ];
-
     await rollupCoreInstance.finaliseDepositsAndSubmitBatch(
       subtreeDepth,
-      _zero_account_mp
+      _zero_account_mp,
+      { value: ethers.utils.parseEther("32").toString() }
     );
   });
 
@@ -254,7 +245,7 @@ contract("Rollup", async function (accounts) {
     // alice balance tree merkle proof
     var AliceAccountSiblings: Array<string> = [
       BobAccountLeaf,
-      utils.getParentLeaf(coordinator, zeroHashes[0]),
+      utils.getParentLeaf(coordinator, coordinator),
       zeroHashes[2],
       zeroHashes[3],
     ];
@@ -283,14 +274,14 @@ contract("Rollup", async function (accounts) {
     var UpdatedAliceAccountLeaf = utils.CreateAccountLeaf(
       OriginalAlice.AccID,
       OriginalAlice.Amount - tx.amount,
-      0,
+      1,
       OriginalAlice.TokenType
     );
 
     // bob balance tree merkle proof
     var BobAccountSiblings: Array<string> = [
       UpdatedAliceAccountLeaf,
-      utils.getParentLeaf(coordinator, zeroHashes[0]),
+      utils.getParentLeaf(coordinator, coordinator),
       zeroHashes[2],
       zeroHashes[3],
     ];
@@ -316,14 +307,18 @@ contract("Rollup", async function (accounts) {
       siblings: BobAccountSiblings,
     };
 
+    var accountProofs = {
+      from: AliceAccountMP,
+      to: BobAccountMP,
+    };
+
     // process transaction validity with process tx
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
       tx,
       alicePDAProof,
-      AliceAccountMP,
-      BobAccountMP
+      accountProofs
     );
 
     console.log("result from processTx: " + JSON.stringify(result));
@@ -343,7 +338,8 @@ contract("Rollup", async function (accounts) {
     // submit batch for that transactions
     await rollupCoreInstance.submitBatch(
       compressedTxs,
-      "0xb6b4b5c6cb43071b3913b1d500b33c52392f7aa85f8a451448e20c3967f2b21a"
+      "0xb6b4b5c6cb43071b3913b1d500b33c52392f7aa85f8a451448e20c3967f2b21a",
+      { value: ethers.utils.parseEther("32").toString() }
     );
   });
 });

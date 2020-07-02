@@ -4,7 +4,6 @@ import {ParamManager} from "./libs/ParamManager.sol";
 import {Governance} from "./Governance.sol";
 import {NameRegistry as Registry} from "./NameRegistry.sol";
 
-
 contract MerkleTreeUtils {
     // The default hashes
     bytes32[] public defaultHashes;
@@ -200,7 +199,7 @@ contract MerkleTreeUtils {
         bytes32 _leaf,
         uint256 _path,
         bytes32[] memory _siblings
-    ) public view returns (bytes32) {
+    ) public pure returns (bytes32) {
         // First compute the leaf node
         bytes32 computedNode = _leaf;
         for (uint256 i = 0; i < _siblings.length; i++) {
@@ -230,7 +229,7 @@ contract MerkleTreeUtils {
         bytes memory _dataBlock,
         uint256 _path,
         bytes32[] memory _siblings
-    ) public view returns (bool) {
+    ) public pure returns (bool) {
         // First compute the leaf node
         bytes32 calculatedRoot = computeInclusionProofRoot(
             _dataBlock,
@@ -254,7 +253,7 @@ contract MerkleTreeUtils {
         bytes32 _leaf,
         uint256 _path,
         bytes32[] memory _siblings
-    ) public view returns (bool) {
+    ) public pure returns (bool) {
         bytes32 calculatedRoot = computeInclusionProofRootWithLeaf(
             _leaf,
             _path,
@@ -346,7 +345,7 @@ contract MerkleTreeUtils {
 
     function pathToIndex(uint256 path, uint256 height)
         public
-        view
+        pure
         returns (uint256)
     {
         uint256 result = 0;
