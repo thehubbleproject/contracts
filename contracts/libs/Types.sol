@@ -1,6 +1,5 @@
 pragma solidity ^0.5.15;
 
-
 /**
  * @title DataTypes
  */
@@ -68,13 +67,13 @@ library Types {
     }
 
     struct AccountProofs {
-      AccountMerkleProof from;
-      AccountMerkleProof to;
+        AccountMerkleProof from;
+        AccountMerkleProof to;
     }
 
     struct BatchValidationProofs {
-      AccountProofs[] accountProofs;
-      PDAMerkleProof[] pdaProof;
+        AccountProofs[] accountProofs;
+        PDAMerkleProof[] pdaProof;
     }
 
     struct TransactionMerkleProof {
