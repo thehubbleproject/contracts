@@ -328,6 +328,33 @@ contract Rollup is RollupHelpers {
         addNewBatchWithDeposit(updatedRoot, depositSubTreeRoot);
     }
 
+    function disputeTxRoot(uint256 _batch_id, bytes calldata _txs) external {
+        Types.Batch memory batch = batches[_batch_id];
+
+        require(
+            batch.stakeCommitted != 0,
+            "Batch doesnt exist or is slashed already"
+        );
+
+        // check if batch is disputable
+        require(block.number < batch.finalisesOn, "Batch already finalised");
+
+        require(
+            (_batch_id < invalidBatchMarker || invalidBatchMarker == 0),
+            "Already successfully disputed. Roll back in process"
+        );
+
+        require(
+            batch.txCommit != ZERO_BYTES32,
+            "Cannot dispute blocks with no transaction"
+        );
+        if (batch.txRoot != merkleUtils.genRoot(_txs, TX_LEN)) {
+            invalidBatchMarker = _batch_id;
+            SlashAndRollback();
+            return;
+        }
+    }
+
     function disputeSignature(
         uint256 _batch_id,
         bytes calldata _txs,

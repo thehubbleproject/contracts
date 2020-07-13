@@ -356,4 +356,58 @@ contract MerkleTreeUtils {
         }
         return result;
     }
+
+    // TODO: move to merkle related
+    function genRoot(bytes calldata _data, uint256 sliceLen)
+        external
+        returns (bytes32)
+    {
+        uint256 batchSize = _data.length / sliceLen;
+        require(
+            sliceLen * batchSize == _data.length,
+            "excess data is not expected"
+        );
+
+        bytes32[] memory buf = new bytes32[](batchSize);
+        // Hash to leaf
+        bytes memory data = _data;
+        uint256 bufOff = 32;
+        for (
+            uint256 dataOff = 32;
+            dataOff < data.length + 32;
+            dataOff += sliceLen
+        ) {
+            // solium-disable-next-line security/no-inline-assembly
+            assembly {
+                mstore(
+                    add(buf, bufOff),
+                    keccak256(add(data, dataOff), sliceLen)
+                )
+                bufOff := add(bufOff, 32)
+            }
+        }
+        // Ascent to the root
+        uint256 odd = batchSize & 1;
+        uint256 n = (batchSize + 1) >> 1;
+        uint256 level = 0;
+        while (true) {
+            uint256 i = 0;
+            for (; i < n - odd; i++) {
+                uint256 j = i << 1;
+                buf[i] = keccak256(abi.encode(buf[j], buf[j + 1]));
+            }
+            if (odd == 1) {
+                buf[i] = keccak256(
+                    abi.encode(buf[i << 1], defaultHashes[level])
+                );
+            }
+            if (n == 1) {
+                break;
+            }
+            odd = (n & 1);
+            n = (n + 1) >> 1;
+            level += 1;
+        }
+        return buf[0];
+    }
 }
