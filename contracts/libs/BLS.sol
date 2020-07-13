@@ -92,6 +92,22 @@ library BLS {
         }
     }
 
+    function isValidPublicKey(uint256[4] memory publicKey)
+        internal
+        pure
+        returns (bool)
+    {
+        if (
+            (publicKey[0] >= N) ||
+            (publicKey[1] >= N) ||
+            (publicKey[2] >= N || (publicKey[3] >= N))
+        ) {
+            return false;
+        } else {
+            return isOnCurveG2(publicKey);
+        }
+    }
+
     function pubkeyToUncompresed(
         uint256[2] memory compressed,
         uint256[2] memory y
