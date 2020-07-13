@@ -17,9 +17,11 @@ library Types {
         bytes32 depositTree;
         address committer;
         bytes32 txRoot;
+        bytes32 txCommit;
         uint256 stakeCommitted;
         uint256 finalisesOn;
         uint256 timestamp;
+        uint256[2] signature;
     }
 
     // Transaction represents how each transaction looks like for

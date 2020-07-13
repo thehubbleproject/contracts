@@ -1,6 +1,5 @@
 pragma solidity ^0.5.15;
 pragma experimental ABIEncoderV2;
-import {IncrementalTree} from "./IncrementalTree.sol";
 import {Types} from "./libs/Types.sol";
 import {Logger} from "./logger.sol";
 import {RollupUtils} from "./libs/RollupUtils.sol";
@@ -12,6 +11,8 @@ import {ParamManager} from "./libs/ParamManager.sol";
 import {POB} from "./POB.sol";
 import {Governance} from "./Governance.sol";
 import {Rollup} from "./rollup.sol";
+
+import {BLSAccountRegistry} from "./BLSAccountRegistry.sol";
 
 contract DepositManager {
     MTUtils public merkleUtils;
@@ -43,7 +44,7 @@ contract DepositManager {
     Logger public logger;
     ITokenRegistry public tokenRegistry;
     IERC20 public tokenContract;
-    IncrementalTree public accountsTree;
+    BLSAccountRegistry public accountRegistry;
 
     bytes32
         public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
@@ -76,52 +77,32 @@ contract DepositManager {
             nameRegistry.getContractDetails(ParamManager.TOKEN_REGISTRY())
         );
         logger = Logger(nameRegistry.getContractDetails(ParamManager.LOGGER()));
-        accountsTree = IncrementalTree(
-            nameRegistry.getContractDetails(ParamManager.ACCOUNTS_TREE())
+        accountRegistry = BLSAccountRegistry(
+            nameRegistry.getContractDetails(ParamManager.ACCOUNT_REGISTRY())
         );
 
-        AddCoordinatorLeaves();
+        // FIX: cannot add if not pubkey supplied
+        // AddCoordinatorLeaves();
     }
 
-    function AddCoordinatorLeaves() internal {
-        // first leaf in the incremental tree belongs to the coordinator
-        accountsTree.appendLeaf(ZERO_BYTES32);
-        accountsTree.appendLeaf(ZERO_BYTES32);
-    }
-
-    /**
-     * @notice Adds a deposit for the msg.sender to the deposit queue
-     * @param _amount Number of tokens that user wants to deposit
-     * @param _tokenType Type of token user is depositing
-     */
-    function deposit(
-        uint256 _amount,
-        uint256 _tokenType,
-        bytes memory _pubkey
-    ) public {
-        depositFor(msg.sender, _amount, _tokenType, _pubkey);
-    }
+    // function AddCoordinatorLeaves() internal {
+    //     // first leaf in the incremental tree belongs to the coordinator
+    //     accountRegistry.appendLeaf(ZERO_BYTES32);
+    //     accountRegistry.appendLeaf(ZERO_BYTES32);
+    // }
 
     /**
      * @notice Adds a deposit for an address to the deposit queue
-     * @param _destination Address for which we are depositing
      * @param _amount Number of tokens that user wants to deposit
      * @param _tokenType Type of token user is depositing
      */
     function depositFor(
-        address _destination,
         uint256 _amount,
         uint256 _tokenType,
-        bytes memory _pubkey
-    ) public {
+        uint256[4] calldata _pubkey
+    ) external {
         // check amount is greater than 0
         require(_amount > 0, "token deposit must be greater than 0");
-
-        // ensure public matches the destination address
-        require(
-            _destination == RollupUtils.calculateAddress(_pubkey),
-            "public key and address don't match"
-        );
 
         // check token type exists
         address tokenContractAddress = tokenRegistry.registeredTokens(
@@ -135,14 +116,8 @@ contract DepositManager {
             "token transfer not approved"
         );
 
-        // Add pubkey to PDA tree
-        Types.PDALeaf memory newPDALeaf;
-        newPDALeaf.pubkey = _pubkey;
-
         // returns leaf index upon successfull append
-        uint256 accID = accountsTree.appendLeaf(
-            RollupUtils.PDALeafToHash(newPDALeaf)
-        );
+        uint256 accID = accountRegistry.register(_pubkey);
 
         // create a new account
         Types.UserAccount memory newAccount;
@@ -158,7 +133,7 @@ contract DepositManager {
         pendingDeposits.push(keccak256(accountBytes));
 
         // emit the event
-        logger.logDepositQueued(accID, _pubkey, accountBytes);
+        // logger.logDepositQueued(accID, _pubkey, accountBytes);
 
         queueNumber++;
         uint256 tmpDepositSubtreeHeight = 0;

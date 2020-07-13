@@ -10,7 +10,6 @@ import {ParamManager} from "./libs/ParamManager.sol";
 import {Types} from "./libs/Types.sol";
 import {RollupUtils} from "./libs/RollupUtils.sol";
 import {ECVerify} from "./libs/ECVerify.sol";
-import {IncrementalTree} from "./IncrementalTree.sol";
 import {Logger} from "./logger.sol";
 import {POB} from "./POB.sol";
 import {MerkleTreeUtils as MTUtils} from "./MerkleTreeUtils.sol";
@@ -18,7 +17,23 @@ import {NameRegistry as Registry} from "./NameRegistry.sol";
 import {Governance} from "./Governance.sol";
 import {DepositManager} from "./DepositManager.sol";
 
+import {BLS} from "./libs/BLS.sol";
+import {BLSAccountRegistry} from "./BLSAccountRegistry.sol";
+
 contract RollupSetup {
+    // FIX:
+    // These constants are related with transaction encoding and
+    // should be fixed with actual size.
+    uint256 constant TX_LEN = 16;
+    uint256 constant accountIDPosition = 4;
+    // TODO: Use commented when bump sol to v0.6
+    // uint256 constant accountIDMask = (1 << accountIDPosition * 8) - 1;
+    uint256 constant accountIDMask = 0xffff;
+    uint256 constant txMask = (1 << TX_LEN) - 1;
+
+    // FIX: use the one from AccountTree.sol
+    uint256 constant ACCOUNT_WITNESS_LENGTH = 31;
+
     using SafeMath for uint256;
     using BytesLib for bytes;
     using ECVerify for bytes32;
@@ -29,7 +44,7 @@ contract RollupSetup {
 
     // External contracts
     DepositManager public depositManager;
-    IncrementalTree public accountsTree;
+    BLSAccountRegistry public accountRegistry;
     Logger public logger;
     ITokenRegistry public tokenRegistry;
     Registry public nameRegistry;
@@ -92,22 +107,29 @@ contract RollupHelpers is RollupSetup {
         return batches.length;
     }
 
-    function addNewBatch(bytes32 txRoot, bytes32 _updatedRoot) internal {
+    function addNewBatch(
+        bytes32 txCommit,
+        bytes32 txRoot,
+        bytes32 _updatedRoot,
+        uint256[2] memory signature
+    ) internal {
         Types.Batch memory newBatch = Types.Batch({
             stateRoot: _updatedRoot,
-            accountRoot: accountsTree.getTreeRoot(),
+            accountRoot: accountRegistry.root(),
             depositTree: ZERO_BYTES32,
             committer: msg.sender,
             txRoot: txRoot,
+            txCommit: txCommit,
             stakeCommitted: msg.value,
             finalisesOn: block.number + governance.TIME_TO_FINALISE(),
-            timestamp: now
+            timestamp: now,
+            signature: signature
         });
 
         batches.push(newBatch);
         logger.logNewBatch(
             newBatch.committer,
-            txRoot,
+            txCommit,
             _updatedRoot,
             batches.length - 1
         );
@@ -116,15 +138,19 @@ contract RollupHelpers is RollupSetup {
     function addNewBatchWithDeposit(bytes32 _updatedRoot, bytes32 depositRoot)
         internal
     {
+        // TODO: use different batch type w/o signature?
+        // TODO: txRoot can be used for deposit root
         Types.Batch memory newBatch = Types.Batch({
             stateRoot: _updatedRoot,
-            accountRoot: accountsTree.getTreeRoot(),
+            accountRoot: accountRegistry.root(),
             depositTree: depositRoot,
             committer: msg.sender,
-            txRoot: ZERO_BYTES32,
+            txCommit: ZERO_BYTES32,
+            txRoot: depositRoot,
             stakeCommitted: msg.value,
             finalisesOn: block.number + governance.TIME_TO_FINALISE(),
-            timestamp: now
+            timestamp: now,
+            signature: [uint256(0), uint256(0)]
         });
 
         batches.push(newBatch);
@@ -173,7 +199,7 @@ contract RollupHelpers is RollupSetup {
             Types.Batch memory batch = batches[i];
 
             // calculate challeger's reward
-            uint _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
+            uint256 _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
             challengerRewards += _challengerReward;
             burnedAmount += batch.stakeCommitted.sub(_challengerReward);
 
@@ -191,7 +217,7 @@ contract RollupHelpers is RollupSetup {
                 i,
                 batch.committer,
                 batch.stateRoot,
-                batch.txRoot,
+                batch.txCommit,
                 batch.stakeCommitted
             );
             if (i == invalidBatchMarker) {
@@ -233,8 +259,8 @@ contract Rollup is RollupHelpers {
         merkleUtils = MTUtils(
             nameRegistry.getContractDetails(ParamManager.MERKLE_UTILS())
         );
-        accountsTree = IncrementalTree(
-            nameRegistry.getContractDetails(ParamManager.ACCOUNTS_TREE())
+        accountRegistry = BLSAccountRegistry(
+            nameRegistry.getContractDetails(ParamManager.ACCOUNT_REGISTRY())
         );
 
         tokenRegistry = ITokenRegistry(
@@ -244,7 +270,12 @@ contract Rollup is RollupHelpers {
         fraudProof = IFraudProof(
             nameRegistry.getContractDetails(ParamManager.FRAUD_PROOF())
         );
-        addNewBatch(ZERO_BYTES32, genesisStateRoot);
+        addNewBatch(
+            ZERO_BYTES32,
+            ZERO_BYTES32,
+            genesisStateRoot,
+            [uint256(0), uint256(0)]
+        );
     }
 
     /**
@@ -252,27 +283,32 @@ contract Rollup is RollupHelpers {
      * @param _txs Compressed transactions .
      * @param _updatedRoot New balance tree root after processing all the transactions
      */
-    function submitBatch(bytes[] calldata _txs, bytes32 _updatedRoot)
-        external
-        payable
-        onlyCoordinator
-        isNotRollingBack
-    {
+    function submitBatch(
+        bytes calldata _txs,
+        bytes32 _txRoot,
+        bytes32 _updatedRoot,
+        uint256[2] calldata signature
+    ) external payable onlyCoordinator isNotRollingBack {
         require(
             msg.value >= governance.STAKE_AMOUNT(),
             "Not enough stake committed"
         );
 
+        uint256 batchSize = _txs.length / TX_LEN;
         require(
-            _txs.length <= governance.MAX_TXS_PER_BATCH(),
+            TX_LEN * batchSize == _txs.length,
+            "excess data is not expected"
+        );
+        require(
+            batchSize <= governance.MAX_TXS_PER_BATCH(),
             "Batch contains more transations than the limit"
         );
-        bytes32 txRoot = merkleUtils.getMerkleRoot(_txs);
+        bytes32 txCommit = keccak256(abi.encodePacked(_txs));
         require(
-            txRoot != ZERO_BYTES32,
-            "Cannot submit a transaction with no transactions"
+            BLS.isValidSignature(signature),
+            "rollup: signature data is invalid"
         );
-        addNewBatch(txRoot, _updatedRoot);
+        addNewBatch(txCommit, _txRoot, _updatedRoot, signature);
     }
 
     /**
@@ -300,6 +336,74 @@ contract Rollup is RollupHelpers {
 
         // add new batch
         addNewBatchWithDeposit(updatedRoot, depositSubTreeRoot);
+    }
+
+    function disputeSignature(
+        uint256 _batch_id,
+        bytes calldata _txs,
+        uint256[4][] calldata pubkeys,
+        bytes32[ACCOUNT_WITNESS_LENGTH][] calldata witnesses
+    ) external {
+        Types.Batch memory batch = batches[_batch_id];
+
+        require(
+            batch.stakeCommitted != 0,
+            "Batch doesnt exist or is slashed already"
+        );
+
+        // check if batch is disputable
+        require(block.number < batch.finalisesOn, "Batch already finalised");
+
+        require(
+            (_batch_id < invalidBatchMarker || invalidBatchMarker == 0),
+            "Already successfully disputed. Roll back in process"
+        );
+
+        require(
+            batch.txCommit != ZERO_BYTES32,
+            "Cannot dispute blocks with no transaction"
+        );
+
+        uint256 batchSize = _txs.length / TX_LEN;
+        require(batchSize > 0, "invalid batch size");
+        require(
+            TX_LEN * batchSize == _txs.length,
+            "excess data is not expected"
+        );
+
+        uint256[2][] memory messages = new uint256[2][](batchSize);
+        bytes memory txs = _txs;
+        uint256 txOff = 32;
+        for (uint256 i = 0; i < batchSize; i++) {
+            // 1. extract accountID of sender
+            uint256 accountID;
+            // solium-disable-next-line security/no-inline-assembly
+            assembly {
+                let p_account_id := add(txs, add(txOff, accountIDPosition))
+                accountID := mload(p_account_id)
+                accountID := and(accountID, accountIDMask)
+            }
+            // 2. check if pub key with senderindex exists
+            require(
+                accountRegistry.exists(accountID, pubkeys[i], witnesses[i]),
+                "account does not exists"
+            );
+            // 3. hash tx message
+            bytes32 rawMessage;
+            // solium-disable-next-line security/no-inline-assembly
+            assembly {
+                let p_tx_data := add(txs, txOff)
+                rawMessage := keccak256(p_tx_data, TX_LEN)
+            }
+            // 4. map to point
+            messages[i] = BLS.mapToPoint(rawMessage);
+            txOff += TX_LEN;
+        }
+        if (!BLS.verifyMultiple(batch.signature, pubkeys, messages)) {
+            invalidBatchMarker = _batch_id;
+            SlashAndRollback();
+            return;
+        }
     }
 
     /**
@@ -332,20 +436,19 @@ contract Rollup is RollupHelpers {
             );
 
             require(
-                batches[_batch_id].txRoot != ZERO_BYTES32,
+                batches[_batch_id].txCommit != ZERO_BYTES32,
                 "Cannot dispute blocks with no transaction"
             );
         }
 
         bytes32 updatedBalanceRoot;
         bool isDisputeValid;
-        bytes32 txRoot;
-        (updatedBalanceRoot, txRoot, isDisputeValid) = processBatch(
+        (updatedBalanceRoot, , isDisputeValid) = processBatch(
             batches[_batch_id - 1].stateRoot,
             batches[_batch_id - 1].accountRoot,
             _txs,
             batchProofs,
-            batches[_batch_id].txRoot
+            batches[_batch_id].txCommit
         );
 
         // dispute is valid, we need to slash and rollback :(

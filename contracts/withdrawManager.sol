@@ -68,7 +68,7 @@ contract WithdrawManager {
         require(block.number > batch.finalisesOn, "Batch not finalised yt");
         // verify transaction exists in the batch
         merkleUtils.verify(
-            batch.txRoot,
+            batch.txCommit,
             RollupUtils.BytesFromTx(withdraw_tx_proof._tx.data),
             withdraw_tx_proof._tx.pathToTx,
             withdraw_tx_proof.siblings

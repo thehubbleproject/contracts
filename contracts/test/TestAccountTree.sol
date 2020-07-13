@@ -21,7 +21,7 @@ contract TestAccountTree is AccountTree {
     function checkInclusion(
         bytes32 leaf,
         uint256 leafIndex,
-        bytes32[WITNESS_LENGTH - 1] calldata witness
+        bytes32[WITNESS_LENGTH] calldata witness
     ) external returns (uint256, bool) {
         uint256 operationGasCost = gasleft();
         bool s = _checkInclusion(leaf, leafIndex, witness);

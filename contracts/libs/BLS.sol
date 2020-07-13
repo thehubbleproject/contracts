@@ -108,6 +108,18 @@ library BLS {
         }
     }
 
+    function isValidSignature(uint256[2] memory signature)
+        internal
+        pure
+        returns (bool)
+    {
+        if ((signature[0] >= N) || (signature[1] >= N)) {
+            return false;
+        } else {
+            return isOnCurveG1(signature);
+        }
+    }
+
     function pubkeyToUncompresed(
         uint256[2] memory compressed,
         uint256[2] memory y
@@ -149,22 +161,6 @@ library BLS {
             return false;
         } else {
             return isOnCurveG2([x0, x1]);
-        }
-    }
-
-    function isValidSignature(uint256[2] memory signature)
-        internal
-        view
-        returns (bool)
-    {
-        uint256 x = signature[0];
-        uint256 y = signature[1];
-        if ((x >= N) || (y >= N)) {
-            return false;
-        } else if ((x == 0) && (y == 0)) {
-            return false;
-        } else {
-            return isOnCurveG1([x, y]);
         }
     }
 

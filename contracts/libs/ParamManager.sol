@@ -25,8 +25,8 @@ library ParamManager {
         return keccak256("rollup_core");
     }
 
-    function ACCOUNTS_TREE() public pure returns (bytes32) {
-        return keccak256("accounts_tree");
+    function ACCOUNT_REGISTRY() public pure returns (bytes32) {
+        return keccak256("accounts_registry");
     }
 
     function LOGGER() public pure returns (bytes32) {

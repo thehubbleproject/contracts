@@ -1,7 +1,6 @@
 pragma solidity ^0.5.15;
 import {ParamManager} from "./libs/ParamManager.sol";
 import {NameRegistry as Registry} from "./NameRegistry.sol";
-import {IncrementalTree} from "./IncrementalTree.sol";
 import {DepositManager} from "./DepositManager.sol";
 import {TestToken} from "./TestToken.sol";
 import {Rollup} from "./rollup.sol";
@@ -53,29 +52,5 @@ contract Deployer {
         );
 
         return nameRegistryAddr;
-
-        // deploy accounts tree
-        // address accountsTree = address(new IncrementalTree(nameRegistryAddr));
-        // require(
-        //     registry.registerName(ParamManager.ACCOUNTS_TREE(), accountsTree),
-        //     "Could not register accounts tree"
-        // );
-
-        // deposit manager
-        // address depositManager = address(new DepositManager(nameRegistryAddr));
-        // require(
-        //     registry.registerName(
-        //         ParamManager.DEPOSIT_MANAGER(),
-        //         depositManager
-        //     ),
-        //     "Cannot register deposit manager"
-        // );
-
-        // // deploy core rollup contract
-        // address rollup = address(new Rollup(nameRegistryAddr));
-        // require(
-        //     registry.registerName(ParamManager.ROLLUP_CORE(), rollup),
-        //     "Cannot register core rollup"
-        // );
     }
 }
