@@ -460,7 +460,7 @@ contract Rollup is RollupHelpers {
 
         bytes32 updatedBalanceRoot;
         bool isDisputeValid;
-        (updatedBalanceRoot, , isDisputeValid) = processBatch(
+        (updatedBalanceRoot, isDisputeValid) = fraudProof.processBatch(
             batches[_batch_id - 1].stateRoot,
             batches[_batch_id - 1].accountRoot,
             _txs,
@@ -486,78 +486,6 @@ contract Rollup is RollupHelpers {
         }
     }
 
-    function ApplyTx(
-        Types.AccountMerkleProof memory _merkle_proof,
-        Types.Transaction memory transaction
-    ) public view returns (bytes memory, bytes32 newRoot) {
-        return fraudProof.ApplyTx(_merkle_proof, transaction);
-    }
-
-    /**
-     * @notice processTx processes a transactions and returns the updated balance tree
-     *  and the updated leaves
-     * conditions in require mean that the dispute be declared invalid
-     * if conditons evaluate if the coordinator was at fault
-     * @return Total number of batches submitted onchain
-     */
-    function processTx(
-        bytes32 _balanceRoot,
-        bytes32 _accountsRoot,
-        Types.Transaction memory _tx,
-        Types.PDAMerkleProof memory _from_pda_proof,
-        Types.AccountProofs memory accountProofs
-    )
-        public
-        view
-        returns (
-            bytes32,
-            bytes memory,
-            bytes memory,
-            Types.ErrorCode,
-            bool
-        )
-    {
-        return
-            fraudProof.processTx(
-                _balanceRoot,
-                _accountsRoot,
-                _tx,
-                _from_pda_proof,
-                accountProofs
-            );
-    }
-
-    /**
-     * @notice processBatch processes a batch and returns the updated balance tree
-     *  and the updated leaves
-     * conditions in require mean that the dispute be declared invalid
-     * if conditons evaluate if the coordinator was at fault
-     * @return Total number of batches submitted onchain
-     */
-    function processBatch(
-        bytes32 initialStateRoot,
-        bytes32 accountsRoot,
-        Types.Transaction[] memory _txs,
-        Types.BatchValidationProofs memory batchProofs,
-        bytes32 expectedTxRoot
-    )
-        public
-        view
-        returns (
-            bytes32,
-            bytes32,
-            bool
-        )
-    {
-        return
-            fraudProof.processBatch(
-                initialStateRoot,
-                accountsRoot,
-                _txs,
-                batchProofs,
-                expectedTxRoot
-            );
-    }
 
     /**
      * @notice Withdraw delay allows coordinators to withdraw their stake after the batch has been finalised

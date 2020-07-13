@@ -254,26 +254,27 @@ contract FraudProof is FraudProofHelpers {
         bytes32 accountsRoot,
         Types.Transaction[] memory _txs,
         Types.BatchValidationProofs memory batchProofs,
-        bytes32 expectedTxRoot
+        bytes32 txCommit
     )
         public
         view
         returns (
             bytes32,
-            bytes32,
             bool
         )
     {
-        bytes32 actualTxRoot = generateTxRoot(_txs);
+        // TODO: instead check txCommit
+
+        // bytes32 actualTxRoot = generateTxRoot(_txs);
         // if there is an expectation set, revert if it's not met
-        if (expectedTxRoot == ZERO_BYTES32) {
-            // if tx root while submission doesnt match tx root of given txs
-            // dispute is unsuccessful
-            require(
-                actualTxRoot == expectedTxRoot,
-                "Invalid dispute, tx root doesn't match"
-            );
-        }
+        // if (expectedTxRoot == ZERO_BYTES32) {
+        //     // if tx root while submission doesnt match tx root of given txs
+        //     // dispute is unsuccessful
+        //     require(
+        //         actualTxRoot == expectedTxRoot,
+        //         "Invalid dispute, tx root doesn't match"
+        //     );
+        // }
 
         bool isTxValid;
         {
@@ -282,7 +283,6 @@ contract FraudProof is FraudProofHelpers {
                 // tx evaluates correctly
                 (stateRoot, , , , isTxValid) = processTx(
                     stateRoot,
-                    accountsRoot,
                     _txs[i],
                     batchProofs.pdaProof[i],
                     batchProofs.accountProofs[i]
@@ -293,7 +293,7 @@ contract FraudProof is FraudProofHelpers {
                 }
             }
         }
-        return (stateRoot, actualTxRoot, !isTxValid);
+        return (stateRoot, !isTxValid);
     }
 
     /**
@@ -305,7 +305,6 @@ contract FraudProof is FraudProofHelpers {
      */
     function processTx(
         bytes32 _balanceRoot,
-        bytes32 _accountsRoot,
         Types.Transaction memory _tx,
         Types.PDAMerkleProof memory _from_pda_proof,
         Types.AccountProofs memory accountProofs
@@ -320,15 +319,6 @@ contract FraudProof is FraudProofHelpers {
             bool
         )
     {
-        // Step-1 Prove that from address's public keys are available
-        ValidatePubkeyAvailability(
-            _accountsRoot,
-            _from_pda_proof,
-            _tx.fromIndex
-        );
-
-        // STEP:2 Ensure the transaction has been signed using the from public key
-        // ValidateSignature(_tx, _from_pda_proof);
 
         // Validate the from account merkle proof
         ValidateAccountMP(_balanceRoot, accountProofs.from);

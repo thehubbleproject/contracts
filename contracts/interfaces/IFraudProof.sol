@@ -6,7 +6,6 @@ import {Types} from "../libs/Types.sol";
 interface IFraudProof {
     function processTx(
         bytes32 _balanceRoot,
-        bytes32 _accountsRoot,
         Types.Transaction calldata _tx,
         Types.PDAMerkleProof calldata _from_pda_proof,
         Types.AccountProofs calldata accountProofs
@@ -31,7 +30,6 @@ interface IFraudProof {
         external
         view
         returns (
-            bytes32,
             bytes32,
             bool
         );
