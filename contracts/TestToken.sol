@@ -7,9 +7,9 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
  * @title TestToken is a basic ERC20 Token
  */
 contract TestToken is ERC20, Ownable {
-    /**
-     * @dev assign totalSupply to account creating this contract */
-    constructor() public {
-        _mint(msg.sender, 10000000000000000000000);
-    }
+  /**
+   * @dev assign totalSupply to account creating this contract */
+  constructor() public {
+    _mint(msg.sender, 10000000000000000000000);
+  }
 }
