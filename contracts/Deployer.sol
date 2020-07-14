@@ -12,45 +12,31 @@ import {Governance} from "./Governance.sol";
 // Deployer is supposed to deploy new set of contracts while setting up all the utilities
 // libraries and other auxiallry contracts like registry
 contract Deployer {
-    constructor(
-        address nameregistry,
-        uint256 maxDepth,
-        uint256 maxDepositSubTree
-    ) public {
-        deployContracts(nameregistry, maxDepth, maxDepositSubTree);
-    }
+  constructor(
+    address nameregistry,
+    uint256 maxDepth,
+    uint256 maxDepositSubTree
+  ) public {
+    deployContracts(nameregistry, maxDepth, maxDepositSubTree);
+  }
 
-    function deployContracts(
-        address nameRegistryAddr,
-        uint256 maxDepth,
-        uint256 maxDepositSubTree
-    ) public returns (address) {
-        Registry registry = Registry(nameRegistryAddr);
-        address governance = address(
-            new Governance(maxDepth, maxDepositSubTree)
-        );
-        require(
-            registry.registerName(ParamManager.Governance(), governance),
-            "Could not register governance"
-        );
-        address mtUtils = address(new MTUtils(nameRegistryAddr));
-        require(
-            registry.registerName(ParamManager.MERKLE_UTILS(), mtUtils),
-            "Could not register merkle utils tree"
-        );
+  function deployContracts(
+    address nameRegistryAddr,
+    uint256 maxDepth,
+    uint256 maxDepositSubTree
+  ) public returns (address) {
+    Registry registry = Registry(nameRegistryAddr);
+    address governance = address(new Governance(maxDepth, maxDepositSubTree));
+    require(registry.registerName(ParamManager.Governance(), governance), "Could not register governance");
+    address mtUtils = address(new MTUtils(nameRegistryAddr));
+    require(registry.registerName(ParamManager.MERKLE_UTILS(), mtUtils), "Could not register merkle utils tree");
 
-        address logger = address(new Logger());
-        require(
-            registry.registerName(ParamManager.LOGGER(), logger),
-            "Cannot register logger"
-        );
+    address logger = address(new Logger());
+    require(registry.registerName(ParamManager.LOGGER(), logger), "Cannot register logger");
 
-        address tokenRegistry = address(new TokenRegistry(nameRegistryAddr));
-        require(
-            registry.registerName(ParamManager.TOKEN_REGISTRY(), tokenRegistry),
-            "Cannot register token registry"
-        );
+    address tokenRegistry = address(new TokenRegistry(nameRegistryAddr));
+    require(registry.registerName(ParamManager.TOKEN_REGISTRY(), tokenRegistry), "Cannot register token registry");
 
-        return nameRegistryAddr;
-    }
+    return nameRegistryAddr;
+  }
 }
