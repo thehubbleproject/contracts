@@ -374,6 +374,7 @@ contract Rollup is RollupHelpers {
     function processTx(
         bytes32 _balanceRoot,
         bytes32 _accountsRoot,
+        bytes memory sig,
         bytes memory txBytes,
         Types.PDAMerkleProof memory _from_pda_proof,
         Types.AccountProofs memory accountProofs
@@ -389,6 +390,7 @@ contract Rollup is RollupHelpers {
         )
     {
        Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
+       _tx.signature = sig;
         return
             fraudProof.processTx(
                 _balanceRoot,
