@@ -257,11 +257,11 @@ contract("Rollup", async function (accounts) {
       from: AliceAccountMP,
       to: BobAccountMP,
     };
-
     // process transaction validity with process tx
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
@@ -396,6 +396,7 @@ contract("Rollup", async function (accounts) {
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
@@ -543,6 +544,7 @@ contract("Rollup", async function (accounts) {
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
@@ -713,6 +715,7 @@ contract("Rollup", async function (accounts) {
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
@@ -866,6 +869,7 @@ contract("Rollup", async function (accounts) {
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
@@ -1005,6 +1009,7 @@ contract("Rollup", async function (accounts) {
     var result = await rollupCoreInstance.processTx(
       currentRoot,
       accountRoot,
+      tx.signature,
       await utils.TxToBytes(tx),
       alicePDAProof,
       accountProofs
