@@ -101,17 +101,14 @@ library RollupUtils {
             );
     }
 
-     function DecompressTx(bytes memory txBytes, uint256 token, uint256 txType,
-                          uint256 nonce)
+     function DecompressTx(bytes memory txBytes)
         public
         pure
-        returns (bytes memory, bytes memory)
+        returns (uint256 from, uint256 to, uint256 nonce,bytes memory sig)
     {
          
-        (uint256 from, uint256 to, uint256 amount, bytes memory sig) =  abi
+        return abi
             .decode(txBytes, (uint256, uint256,uint256, bytes));
-        return (BytesFromTxDeconstructed(from, to, token , nonce, txType,
-                                        amount), sig); 
     }
 
      function CompressTxWithMessage(bytes memory message, bytes memory sig)
@@ -211,7 +208,6 @@ library RollupUtils {
       leaves[0]= HashFromAccount(account1);
       leaves[1] = HashFromAccount(account2);
     }
-
       function GetGenesisDataBlocks() public view returns(bytes[2] memory dataBlocks){
        Types.UserAccount memory account1 = Types.UserAccount({ID: 0, tokenType:0, balance:0, nonce:0});
        Types.UserAccount memory account2 = Types.UserAccount({ID:1, tokenType:0, balance:0, nonce:0});

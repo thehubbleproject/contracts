@@ -163,7 +163,7 @@ contract RollupHelpers is RollupSetup {
             Types.Batch memory batch = batches[i];
 
             // calculate challeger's reward
-            uint256 _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
+            uint _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
             challengerRewards += _challengerReward;
             burnedAmount += batch.stakeCommitted.sub(_challengerReward);
 
@@ -360,7 +360,7 @@ contract Rollup is RollupHelpers {
         Types.AccountMerkleProof memory _merkle_proof,
         bytes memory txBytes
     ) public view returns (bytes memory, bytes32 newRoot) {
-        Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes);
+       Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes); 
         return fraudProof.ApplyTx(_merkle_proof, transaction);
     }
 
@@ -389,8 +389,8 @@ contract Rollup is RollupHelpers {
             bool
         )
     {
-        Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
-        _tx.signature = sig;
+       Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
+       _tx.signature = sig;
         return
             fraudProof.processTx(
                 _balanceRoot,
