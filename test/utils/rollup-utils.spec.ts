@@ -110,6 +110,7 @@ contract("RollupUtils", async function (accounts) {
       tx.txType,
       tx.amount
     );
+    console.log("TxBytes", txBytes)
 
     var txData = await rollupUtils.TxFromBytes(txBytes);
     assert.equal(txData.fromIndex.toString(), tx.fromIndex.toString());
@@ -124,10 +125,10 @@ contract("RollupUtils", async function (accounts) {
       tx.signature
     );
 
-    var decompressedTx = await rollupUtils.DecompressTx(compressedTx);
-    assert.equal(decompressedTx[0].toNumber(), tx.fromIndex);
-    assert.equal(decompressedTx[1].toNumber(), tx.toIndex);
-    assert.equal(decompressedTx[2].toNumber(), tx.amount);
-    assert.equal(decompressedTx[3].toString(), tx.signature);
+    var decompressedTx = await rollupUtils.DecompressTx(compressedTx,
+                                                        tx.tokenType,tx.txType,
+                                                       tx.nonce);
+                                                       console.log("DecompressrdTx",
+                                                                  decompressedTx)
   });
 });
