@@ -158,7 +158,11 @@ contract DepositManager {
         pendingDeposits.push(keccak256(accountBytes));
 
         // emit the event
-        logger.logDepositQueued(accID, _pubkey, accountBytes);
+        logger.logDepositQueued(
+            accID,
+            _pubkey, 
+            accountBytes
+        );
 
         queueNumber++;
         uint256 tmpDepositSubtreeHeight = 0;
