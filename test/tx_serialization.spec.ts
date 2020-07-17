@@ -29,4 +29,28 @@ contract("Tx Serialization", accounts => {
       assert.equal(h0, h1);
     }
   });
+  it("serialize transaction", async function() {
+    const txSize = 64;
+    const txs: Tx[] = [];
+    const senders = [];
+    const receivers = [];
+    const amounts = [];
+    const signatures = [];
+    for (let i = 0; i < txSize; i++) {
+      const tx = Tx.rand();
+      txs.push(tx);
+      senders.push(tx.sender);
+      receivers.push(tx.receiver);
+      amounts.push(tx.amount);
+      signatures.push(tx.signature);
+    }
+    const serialized0 = serialize(txs);
+    const serialized1 = await c.serialize(
+      senders,
+      receivers,
+      amounts,
+      signatures
+    );
+    assert.equal(serialized0, serialized1);
+  });
 });
