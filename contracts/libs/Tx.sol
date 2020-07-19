@@ -14,13 +14,11 @@ library Tx {
   uint256 public constant POSITION_AMOUNT = 12;
 
   function hasExcessData(bytes memory txs) internal pure returns (bool) {
-    uint256 txSize = txs.length / TX_LEN;
-    return txSize * TX_LEN != txs.length;
+    return txs.length % TX_LEN != 0;
   }
 
   function size(bytes memory txs) internal pure returns (uint256) {
-    uint256 txSize = txs.length / TX_LEN;
-    return txSize;
+    return txs.length / TX_LEN;
   }
 
   function amountOf(bytes memory txs, uint256 index) internal pure returns (uint256 amount) {
@@ -64,5 +62,14 @@ library Tx {
       r := keccak256(p_tx, TX_LEN)
     }
     return BLS.mapToPoint(r);
+  }
+
+  function toLeafs(bytes memory txs) internal pure returns (bytes32[] memory) {
+    uint256 batchSize = size(txs);
+    bytes32[] memory buf = new bytes32[](batchSize);
+    for (uint256 i = 0; i < batchSize; i++) {
+      buf[i] = hashOf(txs, i);
+    }
+    return buf;
   }
 }

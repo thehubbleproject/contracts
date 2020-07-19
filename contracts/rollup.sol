@@ -16,28 +16,16 @@ import {NameRegistry as Registry} from "./NameRegistry.sol";
 import {Governance} from "./Governance.sol";
 import {DepositManager} from "./DepositManager.sol";
 
+import {Tx} from "./libs/Tx.sol";
 import {BLS} from "./libs/BLS.sol";
 import {BLSAccountRegistry} from "./BLSAccountRegistry.sol";
 
 contract Rollup {
-  // FIX:
-  // These constants are related with transaction encoding and
-  // should be fixed with actual size.
-  uint256 constant TX_LEN = 16;
-  uint256 constant accountIDPosition = 4;
-  // TODO: Use commented when bump sol to v0.6
-  // uint256 constant accountIDMask = (1 << accountIDPosition * 8) - 1;
-  uint256 constant accountIDMask = 0xffff;
-  uint256 constant txMask = (1 << TX_LEN) - 1;
-
-  // FIX: use the one from AccountTree.sol
-  uint256 constant ACCOUNT_WITNESS_LENGTH = 31;
-
   bytes32 public constant ZERO_BYTES32 = 0x0000000000000000000000000000000000000000000000000000000000000000;
   address payable constant BURN_ADDRESS = 0x0000000000000000000000000000000000000000;
 
   using SafeMath for uint256;
-  // using BytesLib for bytes;
+  using Tx for bytes;
 
   // External contracts
   DepositManager public depositManager;
@@ -215,12 +203,13 @@ contract Rollup {
     uint256[2] calldata signature
   ) external payable onlyCoordinator isNotRollingBack {
     require(msg.value >= governance.STAKE_AMOUNT(), "Not enough stake committed");
-
-    uint256 batchSize = _txs.length / TX_LEN;
-    require(TX_LEN * batchSize == _txs.length, "excess data is not expected");
+    bytes memory txs = _txs;
+    uint256 batchSize = txs.size();
+    require(batchSize > 0, "Rollup: empty batch");
+    require(!txs.hasExcessData(), "Rollup: excess data");
     require(batchSize <= governance.MAX_TXS_PER_BATCH(), "Batch contains more transations than the limit");
     bytes32 txCommit = keccak256(abi.encodePacked(_txs));
-    require(BLS.isValidSignature(signature), "rollup: signature data is invalid");
+    require(BLS.isValidSignature(signature), "Rollup: signature data is invalid");
     addNewBatch(txCommit, _txRoot, _updatedRoot, signature);
   }
 
@@ -267,18 +256,24 @@ contract Rollup {
     );
 
     require(batch.txCommit != ZERO_BYTES32, "Cannot dispute blocks with no transaction");
-    if (batch.txRoot != merkleUtils.genRoot(_txs, TX_LEN)) {
+    if (batch.txRoot != merkleUtils.calculateRootTruncated(_txs.toLeafs())) {
       invalidBatchMarker = _batch_id;
       SlashAndRollback();
       return;
     }
   }
 
+  struct InvalidSignatureProof {
+    uint256[4][] pubkeys;
+    bytes32[ACCOUNT_WITNESS_LENGTH][] witnesses;
+  }
+
+  uint256 constant ACCOUNT_WITNESS_LENGTH = 31;
+
   function disputeSignature(
     uint256 _batch_id,
-    bytes calldata _txs,
-    uint256[4][] calldata pubkeys,
-    bytes32[ACCOUNT_WITNESS_LENGTH][] calldata witnesses
+    InvalidSignatureProof calldata proof,
+    bytes calldata _txs
   ) external {
     Types.Batch memory batch = batches[_batch_id];
 
@@ -294,36 +289,19 @@ contract Rollup {
 
     require(batch.txCommit != ZERO_BYTES32, "Cannot dispute blocks with no transaction");
 
-    uint256 batchSize = _txs.length / TX_LEN;
-    require(batchSize > 0, "invalid batch size");
-    require(TX_LEN * batchSize == _txs.length, "excess data is not expected");
-
-    uint256[2][] memory messages = new uint256[2][](batchSize);
     bytes memory txs = _txs;
-    uint256 txOff = 32;
+    uint256 batchSize = txs.size();
+    require(batchSize > 0, "Rollup: empty batch");
+    require(!txs.hasExcessData(), "Rollup: excess data");
+    uint256[2][] memory messages = new uint256[2][](batchSize);
     for (uint256 i = 0; i < batchSize; i++) {
-      // 1. extract accountID of sender
-      uint256 accountID;
-      // solium-disable-next-line security/no-inline-assembly
-      assembly {
-        let p_account_id := add(txs, add(txOff, accountIDPosition))
-        accountID := mload(p_account_id)
-        accountID := and(accountID, accountIDMask)
-      }
-      // 2. check if pub key with senderindex exists
-      require(accountRegistry.exists(accountID, pubkeys[i], witnesses[i]), "account does not exists");
-      // 3. hash tx message
-      bytes32 rawMessage;
-      // solium-disable-next-line security/no-inline-assembly
-      assembly {
-        let p_tx_data := add(txs, txOff)
-        rawMessage := keccak256(p_tx_data, TX_LEN)
-      }
-      // 4. map to point
-      messages[i] = BLS.mapToPoint(rawMessage);
-      txOff += TX_LEN;
+      uint256 accountID = txs.senderOf(i);
+      // What if account not exists?
+      // Then this batch must be subjected to invalid state transition
+      require(accountRegistry.exists(accountID, proof.pubkeys[i], proof.witnesses[i]), "Rollup: account does not exists");
+      messages[i] = txs.mapToPoint(i);
     }
-    if (!BLS.verifyMultiple(batch.signature, pubkeys, messages)) {
+    if (!BLS.verifyMultiple(batch.signature, proof.pubkeys, messages)) {
       invalidBatchMarker = _batch_id;
       SlashAndRollback();
       return;
