@@ -1,3 +1,6 @@
+export enum Usage {
+  Genesis, Transfer, Deposit
+}
 export interface Account {
   ID: number;
   tokenType: number;
