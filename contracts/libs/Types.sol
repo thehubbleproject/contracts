@@ -4,6 +4,13 @@ pragma solidity ^0.5.15;
  * @title DataTypes
  */
 library Types {
+    // We define Usage for a batch or for a tx
+    // to check if the usage of a batch and all txs in it are the same
+    enum Usage {
+        Genesis, // The Genesis type is only applicable to batch but not tx
+        Transfer,
+        Deposit
+    }
     // PDALeaf represents the leaf in
     // Pubkey DataAvailability Tree
     struct PDALeaf {
@@ -20,7 +27,9 @@ library Types {
         uint256 stakeCommitted;
         uint256 finalisesOn;
         uint256 timestamp;
+        Usage batchType;
     }
+
 
     // Transaction represents how each transaction looks like for
     // this rollup chain
