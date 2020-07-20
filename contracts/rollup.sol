@@ -100,7 +100,8 @@ contract RollupHelpers is RollupSetup {
             newBatch.committer,
             txRoot,
             _updatedRoot,
-            batches.length - 1
+            batches.length - 1,
+            batchType
         );
     }
 
@@ -124,7 +125,8 @@ contract RollupHelpers is RollupSetup {
             newBatch.committer,
             ZERO_BYTES32,
             _updatedRoot,
-            batches.length - 1
+            batches.length - 1,
+            Types.Usage.Deposit
         );
     }
 
