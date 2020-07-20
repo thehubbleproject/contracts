@@ -298,7 +298,10 @@ contract Rollup {
       uint256 accountID = txs.senderOf(i);
       // What if account not exists?
       // Then this batch must be subjected to invalid state transition
-      require(accountRegistry.exists(accountID, proof.pubkeys[i], proof.witnesses[i]), "Rollup: account does not exists");
+      require(
+        accountRegistry.exists(accountID, proof.pubkeys[i], proof.witnesses[i]),
+        "Rollup: account does not exists"
+      );
       messages[i] = txs.mapToPoint(i);
     }
     if (!BLS.verifyMultiple(batch.signature, proof.pubkeys, messages)) {
@@ -316,8 +319,8 @@ contract Rollup {
    */
   function disputeBatch(
     uint256 _batch_id,
-    Types.Transaction[] memory _txs,
-    Types.BatchValidationProofs memory batchProofs
+    bytes memory _txs,
+    Types.InvalidTransitionProof memory proof
   ) public {
     // load batch
     require(batches[_batch_id].stakeCommitted != 0, "Batch doesnt exist or is slashed already");
@@ -334,13 +337,7 @@ contract Rollup {
 
     bytes32 updatedBalanceRoot;
     bool isDisputeValid;
-    (updatedBalanceRoot, isDisputeValid) = fraudProof.processBatch(
-      batches[_batch_id - 1].stateRoot,
-      batches[_batch_id - 1].accountRoot,
-      _txs,
-      batchProofs,
-      batches[_batch_id].txCommit
-    );
+    (updatedBalanceRoot, isDisputeValid) = fraudProof.processBatch(batches[_batch_id - 1].stateRoot, _txs, proof);
 
     // dispute is valid, we need to slash and rollback :(
     if (isDisputeValid) {

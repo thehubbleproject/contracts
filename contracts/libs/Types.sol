@@ -4,6 +4,14 @@ pragma solidity ^0.5.15;
  * @title DataTypes
  */
 library Types {
+  struct InvalidTransitionProof {
+    UserAccount[] senderAccounts;
+    bytes32[][] senderWitnesses;
+    UserAccount[] receiverAccounts;
+    bytes32[][] receiverWitnesses;
+  }
+
+
   // PDALeaf represents the leaf in
   // Pubkey DataAvailability Tree
   struct PDALeaf {

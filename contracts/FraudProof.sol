@@ -7,6 +7,7 @@ import {IERC20} from "./interfaces/IERC20.sol";
 import {ITokenRegistry} from "./interfaces/ITokenRegistry.sol";
 
 import {Types} from "./libs/Types.sol";
+import {Tx} from "./libs/Tx.sol";
 import {RollupUtils} from "./libs/RollupUtils.sol";
 import {ParamManager} from "./libs/ParamManager.sol";
 
@@ -24,45 +25,14 @@ contract FraudProofSetup {
 }
 
 contract FraudProofHelpers is FraudProofSetup {
-  function ValidatePubkeyAvailability(
-    bytes32 _accountsRoot,
-    Types.PDAMerkleProof memory _from_pda_proof,
-    uint256 from_index
+  function ValidateAccountMP(
+    bytes32 root,
+    uint256 stateID,
+    Types.UserAccount memory account,
+    bytes32[] memory witness
   ) public view {
-    // verify from account pubkey exists in PDA tree
-    // NOTE: We dont need to prove that to address has the pubkey available
-    Types.PDALeaf memory fromPDA = Types.PDALeaf({pubkey: _from_pda_proof._pda.pubkey_leaf.pubkey});
-
-    require(
-      merkleUtils.verifyLeaf(
-        _accountsRoot,
-        RollupUtils.PDALeafToHash(fromPDA),
-        _from_pda_proof._pda.pathToPubkey,
-        _from_pda_proof.siblings
-      ),
-      "From PDA proof is incorrect"
-    );
-
-    // convert pubkey path to ID
-    uint256 computedID = merkleUtils.pathToIndex(_from_pda_proof._pda.pathToPubkey, governance.MAX_DEPTH());
-
-    // make sure the ID in transaction is the same account for which account proof was provided
-    require(computedID == from_index, "Pubkey not related to the from account in the transaction");
-  }
-
-  function ValidateAccountMP(bytes32 root, Types.AccountMerkleProof memory merkle_proof) public view {
-    bytes32 accountLeaf = RollupUtils.getAccountHash(
-      merkle_proof.accountIP.account.ID,
-      merkle_proof.accountIP.account.balance,
-      merkle_proof.accountIP.account.nonce,
-      merkle_proof.accountIP.account.tokenType
-    );
-
-    // verify from leaf exists in the balance tree
-    require(
-      merkleUtils.verifyLeaf(root, accountLeaf, merkle_proof.accountIP.pathToAccount, merkle_proof.siblings),
-      "Merkle Proof is incorrect"
-    );
+    bytes32 accountLeaf = RollupUtils.getAccountHash(account.ID, account.balance, account.nonce, account.tokenType);
+    require(merkleUtils.verifyLeaf(root, accountLeaf, stateID, witness), "Merkle Proof is incorrect");
   }
 
   function validateTxBasic(Types.Transaction memory _tx, Types.UserAccount memory _from_account)
@@ -156,6 +126,8 @@ contract FraudProofHelpers is FraudProofSetup {
 }
 
 contract FraudProof is FraudProofHelpers {
+  using Tx for bytes;
+
   /*********************
    * Constructor *
    ********************/
@@ -169,14 +141,8 @@ contract FraudProof is FraudProofHelpers {
     tokenRegistry = ITokenRegistry(nameRegistry.getContractDetails(ParamManager.TOKEN_REGISTRY()));
   }
 
-  function generateTxRoot(Types.Transaction[] memory _txs) public view returns (bytes32 txRoot) {
-    // generate merkle tree from the txs provided by user
-    bytes[] memory txs = new bytes[](_txs.length);
-    for (uint256 i = 0; i < _txs.length; i++) {
-      txs[i] = RollupUtils.CompressTx(_txs[i]);
-    }
-    txRoot = merkleUtils.getMerkleRoot(txs);
-    return txRoot;
+  function generateTxRoot(bytes memory _txs) public view returns (bytes32 txRoot) {
+    merkleUtils.calculateRootTruncated(_txs.toLeafs());
   }
 
   /**
@@ -185,98 +151,56 @@ contract FraudProof is FraudProofHelpers {
    * */
   function processBatch(
     bytes32 stateRoot,
-    bytes32 accountsRoot,
-    Types.Transaction[] memory _txs,
-    Types.BatchValidationProofs memory batchProofs,
-    bytes32 txCommit
+    bytes memory txs,
+    Types.InvalidTransitionProof memory proof
   ) public view returns (bytes32, bool) {
-    // TODO: instead check txCommit
-
-    // bytes32 actualTxRoot = generateTxRoot(_txs);
-    // if there is an expectation set, revert if it's not met
-    // if (expectedTxRoot == ZERO_BYTES32) {
-    //     // if tx root while submission doesnt match tx root of given txs
-    //     // dispute is unsuccessful
-    //     require(
-    //         actualTxRoot == expectedTxRoot,
-    //         "Invalid dispute, tx root doesn't match"
-    //     );
-    // }
-
     bool isTxValid;
-    {
-      for (uint256 i = 0; i < _txs.length; i++) {
-        // call process tx update for every transaction to check if any
-        // tx evaluates correctly
-        (stateRoot, , , , isTxValid) = processTx(
-          stateRoot,
-          _txs[i],
-          batchProofs.pdaProof[i],
-          batchProofs.accountProofs[i]
-        );
-
-        if (!isTxValid) {
-          break;
-        }
+    uint256 batchSize = txs.size();
+    require(batchSize > 0, "Rollup: empty batch");
+    require(!txs.hasExcessData(), "Rollup: excess tx data");
+    bytes32 acc = stateRoot;
+    for (uint256 i = 0; i < batchSize; i++) {
+      // A. check sender inclusion in state
+      uint256 senderID = txs.senderOf(i);
+      ValidateAccountMP(acc, senderID, proof.senderAccounts[i], proof.senderWitnesses[i]);
+      // FIX: cannot be an empty account
+      // if (proof.senderAccounts[i].isEmptyAccount()) {
+      //   return bytes32(0), false;
+      // }
+      // B. apply diff for sender
+      uint256 amount = txs.amountOf(i);
+      Types.UserAccount memory account = proof.senderAccounts[i];
+      if (account.balance < amount) {
+        return (bytes32(0), false);
       }
+      account.balance -= amount;
+      account.nonce += 1;
+      if (account.nonce >= 0x100000000) {
+        return (bytes32(0), false);
+      }
+      acc = merkleUtils.updateLeafWithSiblings(
+        keccak256(RollupUtils.BytesFromAccount(account)),
+        senderID,
+        proof.senderWitnesses[i]
+      );
+      // A. check receiver inclusion in state
+      uint256 receiverID = txs.receiverOf(i);
+      ValidateAccountMP(acc, receiverID, proof.receiverAccounts[i], proof.receiverWitnesses[i]);
+      // FIX: cannot be an empty account
+      // if (proof.receiverAccounts[i].isEmptyAccount()) {
+      //   return bytes32(0), false;
+      // }
+      account = proof.senderAccounts[i];
+      account.balance -= amount;
+      if (account.balance >= 0x100000000) {
+        return (bytes32(0), false);
+      }
+      acc = merkleUtils.updateLeafWithSiblings(
+        keccak256(RollupUtils.BytesFromAccount(account)),
+        senderID,
+        proof.senderWitnesses[i]
+      );
     }
     return (stateRoot, !isTxValid);
-  }
-
-  /**
-   * @notice processTx processes a transactions and returns the updated balance tree
-   *  and the updated leaves
-   * conditions in require mean that the dispute be declared invalid
-   * if conditons evaluate if the coordinator was at fault
-   * @return Total number of batches submitted onchain
-   */
-  function processTx(
-    bytes32 _balanceRoot,
-    Types.Transaction memory _tx,
-    Types.PDAMerkleProof memory _from_pda_proof,
-    Types.AccountProofs memory accountProofs
-  )
-    public
-    view
-    returns (
-      bytes32,
-      bytes memory,
-      bytes memory,
-      Types.ErrorCode,
-      bool
-    )
-  {
-    // Validate the from account merkle proof
-    ValidateAccountMP(_balanceRoot, accountProofs.from);
-
-    Types.ErrorCode err_code = validateTxBasic(_tx, accountProofs.from.accountIP.account);
-    if (err_code != Types.ErrorCode.NoError) return (ZERO_BYTES32, "", "", err_code, false);
-
-    // account holds the token type in the tx
-    if (accountProofs.from.accountIP.account.tokenType != _tx.tokenType)
-      // invalid state transition
-      // needs to be slashed because the submitted transaction
-      // had invalid token type
-      return (ZERO_BYTES32, "", "", Types.ErrorCode.BadFromTokenType, false);
-
-    bytes32 newRoot;
-    bytes memory new_from_account;
-    bytes memory new_to_account;
-
-    (new_from_account, newRoot) = ApplyTx(accountProofs.from, _tx);
-
-    // validate if leaf exists in the updated balance tree
-    ValidateAccountMP(newRoot, accountProofs.to);
-
-    // account holds the token type in the tx
-    if (accountProofs.to.accountIP.account.tokenType != _tx.tokenType)
-      // invalid state transition
-      // needs to be slashed because the submitted transaction
-      // had invalid token type
-      return (ZERO_BYTES32, "", "", Types.ErrorCode.BadToTokenType, false);
-
-    (new_to_account, newRoot) = ApplyTx(accountProofs.to, _tx);
-
-    return (newRoot, new_from_account, new_to_account, Types.ErrorCode.NoError, true);
   }
 }
