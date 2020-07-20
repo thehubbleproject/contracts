@@ -1,7 +1,7 @@
 import * as utils from "../scripts/helpers/utils";
 import { ethers } from "ethers";
 import * as walletHelper from "../scripts/helpers/wallet";
-import { Transaction, ErrorCode } from "../scripts/helpers/interfaces";
+import {Usage, Transaction, ErrorCode } from "../scripts/helpers/interfaces";
 const RollupCore = artifacts.require("Rollup");
 const TestToken = artifacts.require("TestToken");
 const DepositManager = artifacts.require("DepositManager");
@@ -891,7 +891,8 @@ contract("Rollup", async function (accounts) {
     console.log("compressedTx: " + JSON.stringify(compressedTxs));
 
     // submit batch for that transactions
-    await rollupCoreInstance.submitBatch(compressedTxs, falseResult, {
+    await rollupCoreInstance.submitBatch(compressedTxs,
+                                         falseResult,Usage.Transfer, {
       value: ethers.utils.parseEther("32").toString(),
     });
 

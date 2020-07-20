@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import * as ethUtils from "ethereumjs-util";
-import { Account, Transaction } from "./interfaces";
+import { Usage, Account, Transaction } from "./interfaces";
 const MerkleTreeUtils = artifacts.require("MerkleTreeUtils");
 const ParamManager = artifacts.require("ParamManager");
 const nameRegistry = artifacts.require("NameRegistry");
@@ -276,7 +276,7 @@ export async function compressAndSubmitBatch(tx: Transaction, newRoot: string) {
   const compressedTxs = [compressedTx];
 
   // submit batch for that transactions
-  await rollupCoreInstance.submitBatch(compressedTxs, newRoot, {
+  await rollupCoreInstance.submitBatch(compressedTxs, newRoot, Usage.Transfer, {
     value: ethers.utils.parseEther("32").toString(),
   });
 }
