@@ -44,10 +44,6 @@ contract DepositManager {
     ITokenRegistry public tokenRegistry;
     IERC20 public tokenContract;
     IncrementalTree public accountsTree;
-
-    bytes32
-        public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
-
     modifier onlyCoordinator() {
         POB pobContract = POB(
             nameRegistry.getContractDetails(ParamManager.POB())
@@ -84,9 +80,10 @@ contract DepositManager {
     }
 
     function AddCoordinatorLeaves() internal {
+        bytes memory zeroData = abi.encode(0);
         // first leaf in the incremental tree belongs to the coordinator
-        accountsTree.appendLeaf(ZERO_BYTES32);
-        accountsTree.appendLeaf(ZERO_BYTES32);
+        accountsTree.appendLeaf(zeroData);
+        accountsTree.appendLeaf(zeroData);
     }
 
     /**
@@ -135,14 +132,8 @@ contract DepositManager {
             "token transfer not approved"
         );
 
-        // Add pubkey to PDA tree
-        Types.PDALeaf memory newPDALeaf;
-        newPDALeaf.pubkey = _pubkey;
-
         // returns leaf index upon successfull append
-        uint256 accID = accountsTree.appendLeaf(
-            RollupUtils.PDALeafToHash(newPDALeaf)
-        );
+        uint256 accID = accountsTree.appendLeaf(_pubkey);
 
         // create a new account
         Types.UserAccount memory newAccount;
@@ -158,11 +149,7 @@ contract DepositManager {
         pendingDeposits.push(keccak256(accountBytes));
 
         // emit the event
-        logger.logDepositQueued(
-            accID,
-            _pubkey, 
-            accountBytes
-        );
+        logger.logDepositQueued(accID, _pubkey, accountBytes);
 
         queueNumber++;
         uint256 tmpDepositSubtreeHeight = 0;

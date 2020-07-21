@@ -82,7 +82,11 @@ contract RollupHelpers is RollupSetup {
         return batches.length;
     }
 
-    function addNewBatch(bytes32 txRoot, bytes32 _updatedRoot, Types.Usage batchType) internal {
+    function addNewBatch(
+        bytes32 txRoot,
+        bytes32 _updatedRoot,
+        Types.Usage batchType
+    ) internal {
         Types.Batch memory newBatch = Types.Batch({
             stateRoot: _updatedRoot,
             accountRoot: accountsTree.getTreeRoot(),
@@ -167,7 +171,7 @@ contract RollupHelpers is RollupSetup {
             Types.Batch memory batch = batches[i];
 
             // calculate challeger's reward
-            uint _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
+            uint256 _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
             challengerRewards += _challengerReward;
             burnedAmount += batch.stakeCommitted.sub(_challengerReward);
 
@@ -246,13 +250,11 @@ contract Rollup is RollupHelpers {
      * @param _txs Compressed transactions .
      * @param _updatedRoot New balance tree root after processing all the transactions
      */
-    function submitBatch(bytes[] calldata _txs, bytes32 _updatedRoot,
-                         Types.Usage batchType)
-        external
-        payable
-        onlyCoordinator
-        isNotRollingBack
-    {
+    function submitBatch(
+        bytes[] calldata _txs,
+        bytes32 _updatedRoot,
+        Types.Usage batchType
+    ) external payable onlyCoordinator isNotRollingBack {
         require(
             msg.value >= governance.STAKE_AMOUNT(),
             "Not enough stake committed"
@@ -365,7 +367,7 @@ contract Rollup is RollupHelpers {
         Types.AccountMerkleProof memory _merkle_proof,
         bytes memory txBytes
     ) public view returns (bytes memory, bytes32 newRoot) {
-       Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes); 
+        Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes);
         return fraudProof.ApplyTx(_merkle_proof, transaction);
     }
 
@@ -394,8 +396,8 @@ contract Rollup is RollupHelpers {
             bool
         )
     {
-       Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
-       _tx.signature = sig;
+        Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
+        _tx.signature = sig;
         return
             fraudProof.processTx(
                 _balanceRoot,
