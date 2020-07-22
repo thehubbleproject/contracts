@@ -48,14 +48,19 @@ contract IncrementalTree {
         }
     }
 
+    function appendDataBlock(bytes memory datablock) public returns(uint256){
+        bytes32 _leaf = keccak256(abi.encode(datablock));
+        uint256 accID = appendLeaf(_leaf);
+        logger.logNewPubkeyAdded(accID, datablock);
+        return accID;
+    }
+
     /**
      * @notice Append leaf will append a leaf to the end of the tree
      * @return The sibling nodes along the way.
      */
-    function appendLeaf(bytes memory dataBlock) public returns (uint256) {
-        bytes32 _leaf = keccak256(abi.encode(dataBlock));
+    function appendLeaf(bytes32 _leaf) public returns (uint256) {
         uint256 currentIndex = nextLeafIndex;
-
         uint256 depth = uint256(tree.height);
         require(
             currentIndex < uint256(2)**depth,
@@ -80,7 +85,6 @@ contract IncrementalTree {
         uint256 n;
         n = nextLeafIndex;
         nextLeafIndex += 1;
-        logger.logNewPubkeyAdded(n, dataBlock);
         return n;
     }
 

@@ -20,7 +20,8 @@ contract DepositManager {
     mapping(uint256 => bytes32) pendingFilledSubtrees;
     uint256 public firstElement = 1;
     uint256 public lastElement = 0;
-
+bytes32
+        public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
     uint256 public depositSubTreesPackaged = 0;
 
     function enqueue(bytes32 newDepositSubtree) public {
@@ -80,10 +81,9 @@ contract DepositManager {
     }
 
     function AddCoordinatorLeaves() internal {
-        bytes memory zeroData = abi.encode(0);
-        // first leaf in the incremental tree belongs to the coordinator
-        accountsTree.appendLeaf(zeroData);
-        accountsTree.appendLeaf(zeroData);
+        // first 2 leaves belong to coordinator
+         accountsTree.appendLeaf(ZERO_BYTES32);
+        accountsTree.appendLeaf(ZERO_BYTES32);
     }
 
     /**
@@ -133,7 +133,7 @@ contract DepositManager {
         );
 
         // returns leaf index upon successfull append
-        uint256 accID = accountsTree.appendLeaf(_pubkey);
+        uint256 accID = accountsTree.appendDataBlock(_pubkey);
 
         // create a new account
         Types.UserAccount memory newAccount;
