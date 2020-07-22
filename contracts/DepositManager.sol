@@ -1,17 +1,17 @@
 pragma solidity ^0.5.15;
 pragma experimental ABIEncoderV2;
-import {IncrementalTree} from "./IncrementalTree.sol";
-import {Types} from "./libs/Types.sol";
-import {Logger} from "./logger.sol";
-import {RollupUtils} from "./libs/RollupUtils.sol";
-import {MerkleTreeUtils as MTUtils} from "./MerkleTreeUtils.sol";
-import {NameRegistry as Registry} from "./NameRegistry.sol";
-import {ITokenRegistry} from "./interfaces/ITokenRegistry.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ParamManager} from "./libs/ParamManager.sol";
-import {POB} from "./POB.sol";
-import {Governance} from "./Governance.sol";
-import {Rollup} from "./rollup.sol";
+import { IncrementalTree } from "./IncrementalTree.sol";
+import { Types } from "./libs/Types.sol";
+import { Logger } from "./logger.sol";
+import { RollupUtils } from "./libs/RollupUtils.sol";
+import { MerkleTreeUtils as MTUtils } from "./MerkleTreeUtils.sol";
+import { NameRegistry as Registry } from "./NameRegistry.sol";
+import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { ParamManager } from "./libs/ParamManager.sol";
+import { POB } from "./POB.sol";
+import { Governance } from "./Governance.sol";
+import { Rollup } from "./rollup.sol";
 
 contract DepositManager {
     MTUtils public merkleUtils;
@@ -20,7 +20,7 @@ contract DepositManager {
     mapping(uint256 => bytes32) pendingFilledSubtrees;
     uint256 public firstElement = 1;
     uint256 public lastElement = 0;
-bytes32
+    bytes32
         public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
     uint256 public depositSubTreesPackaged = 0;
 
@@ -82,7 +82,7 @@ bytes32
 
     function AddCoordinatorLeaves() internal {
         // first 2 leaves belong to coordinator
-         accountsTree.appendLeaf(ZERO_BYTES32);
+        accountsTree.appendLeaf(ZERO_BYTES32);
         accountsTree.appendLeaf(ZERO_BYTES32);
     }
 

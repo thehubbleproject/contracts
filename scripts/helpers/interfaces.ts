@@ -1,28 +1,30 @@
 export enum Usage {
-  Genesis, Transfer, Deposit
+    Genesis,
+    Transfer,
+    Deposit
 }
 export interface Account {
-  ID: number;
-  tokenType: number;
-  balance: number;
-  nonce: number;
+    ID: number;
+    tokenType: number;
+    balance: number;
+    nonce: number;
 }
 
 export interface Transaction {
-  fromIndex: number;
-  toIndex: number;
-  tokenType: number;
-  amount: number;
-  txType: number;
-  nonce: number;
-  signature?: string;
+    fromIndex: number;
+    toIndex: number;
+    tokenType: number;
+    amount: number;
+    txType: number;
+    nonce: number;
+    signature?: string;
 }
 
 export enum ErrorCode {
-  NoError,
-  InvalidTokenAddress,
-  InvalidTokenAmount,
-  NotEnoughTokenBalance,
-  BadFromTokenType,
-  BadToTokenType,
+    NoError,
+    InvalidTokenAddress,
+    InvalidTokenAmount,
+    NotEnoughTokenBalance,
+    BadFromTokenType,
+    BadToTokenType
 }

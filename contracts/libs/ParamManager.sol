@@ -1,6 +1,5 @@
 pragma solidity ^0.5.15;
 
-
 library ParamManager {
     function DEPOSIT_MANAGER() public pure returns (bytes32) {
         return keccak256("deposit_manager");

@@ -30,7 +30,6 @@ library Types {
         Usage batchType;
     }
 
-
     // Transaction represents how each transaction looks like for
     // this rollup chain
     struct Transaction {
@@ -76,13 +75,13 @@ library Types {
     }
 
     struct AccountProofs {
-      AccountMerkleProof from;
-      AccountMerkleProof to;
+        AccountMerkleProof from;
+        AccountMerkleProof to;
     }
 
     struct BatchValidationProofs {
-      AccountProofs[] accountProofs;
-      PDAMerkleProof[] pdaProof;
+        AccountProofs[] accountProofs;
+        PDAMerkleProof[] pdaProof;
     }
 
     struct TransactionMerkleProof {
