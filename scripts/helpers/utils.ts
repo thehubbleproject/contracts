@@ -146,8 +146,8 @@ export async function getMerkleTreeUtils() {
   return MerkleTreeUtils.at(merkleTreeUtilsAddr);
 }
 
-export async function getRollupUtils() {
-  var rollupUtils: any = await rollupUtils.deployed();
+export async function getRollupUtils(rollupUtilsInstance?: any) {
+  var rollupUtils: any = !rollupUtilsInstance ? await rollupUtils.deployed() : rollupUtilsInstance;
   return rollupUtils;
 }
 
