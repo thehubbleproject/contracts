@@ -1,13 +1,48 @@
+var fs = require('fs');
+
 import * as utils from "../../scripts/helpers/utils";
 import * as walletHelper from "../..//scripts/helpers/wallet";
 import { assert } from "chai";
+let RollupUtilContract = artifacts.require("RollupUtils");
+const Types = artifacts.require("Types");
 
-const RollupUtils = artifacts.require("RollupUtils");
+const truffleContract = require("@truffle/contract");
+var Web3 = require('web3');
+var provider = new Web3.providers.HttpProvider("http://localhost:8545");
 
 contract("RollupUtils", async function (accounts) {
+  
   var wallets: any;
+  let rollupUtils: any;
+  let rollupUtilsInstance: any;
+
   before(async function () {
     wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
+    const typesLib = await Types.new();
+    await RollupUtilContract.link("Types", typesLib.address);
+    rollupUtilsInstance = await RollupUtilContract.new();
+    var networkId = await web3.eth.net.getId()
+    console.log("RollupUtilContractAddr: ", rollupUtilsInstance.address)
+    await (new Promise(async (resolve, reject) => {
+      fs.readFile('./build/contracts/RollupUtils.json', {encoding: 'utf8'}, (err: any,data:any) => {
+        var users = JSON.parse(data);
+        users.networks[networkId] = { 
+          events: {},
+          links: {},
+          address: rollupUtilsInstance.address,
+          transactionHash: rollupUtilsInstance.transactionHash 
+        }
+        var string = JSON.stringify(users, null, '\t');
+        fs.writeFile('./build/contracts/RollupUtils.json', string, (err: any) => {
+          if(err) return console.error(err);
+          console.log('done');
+          rollupUtils = truffleContract(users);
+          rollupUtils.setProvider(provider);
+          resolve("done")
+        })
+      })
+    }).then(console.log))
+    rollupUtils = await rollupUtils.deployed();
   });
 
   // test if we are able to create append a leaf
@@ -71,7 +106,7 @@ contract("RollupUtils", async function (accounts) {
   // });
 
   it("test account encoding and decoding", async function () {
-    var rollupUtils = await RollupUtils.deployed();
+    console.log(rollupUtils.address)
     var account = {
       ID: 1,
       tokenType: 2,
