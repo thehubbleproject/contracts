@@ -3,6 +3,10 @@ import * as migrateUtils from "../../scripts/helpers/migration";
 import * as walletHelper from "../..//scripts/helpers/wallet";
 import { assert } from "chai";
 
+const rollupUtilsLib = artifacts.require("RollupUtils");
+
+var argv = require('minimist')(process.argv.slice(2));
+
 contract("RollupUtils", async function (accounts) {
   
   var wallets: any;
@@ -10,12 +14,16 @@ contract("RollupUtils", async function (accounts) {
 
   before(async function () {
     wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
-    const typesLib: any = await migrateUtils.deployAndUpdate("Types", {})
-    let libs = {
-      "Types":  typesLib.address
+    if (argv.dn) {
+      const typesLib: any = await migrateUtils.deployAndUpdate("Types", {})
+      let libs = {
+        "Types":  typesLib.address
+      }
+      rollupUtils = await migrateUtils.deployAndUpdate("RollupUtils", libs)
+      console.log(rollupUtils.address)
+    } else {
+      rollupUtils = await rollupUtilsLib.deployed()
     }
-    rollupUtils = await migrateUtils.deployAndUpdate("RollupUtils", libs)
-    console.log(rollupUtils.address)
   });
 
   // test if we are able to create append a leaf

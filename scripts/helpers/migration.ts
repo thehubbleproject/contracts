@@ -2,11 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 const truffleContract = require("@truffle/contract");
-const Web3 = require('web3');
 
-var provider = new Web3.providers.HttpProvider("http://localhost:8545");
-
-export async function deployAndUpdate(contractName: string, libs: any) {
+export async function deployAndUpdate(contractName: string, libs: any, params?: any) {
     return await new Promise(async (resolve, reject) => {
         var networkId = await web3.eth.net.getId()
         let contractArtifacts = artifacts.require(contractName);
@@ -20,15 +17,18 @@ export async function deployAndUpdate(contractName: string, libs: any) {
             await contractArtifacts.link(name, address);
             links[name] =address;
         }
-        let contractInstance = await contractArtifacts.new();
+        let _params = !params ? [] : params
+        let contractInstance = await contractArtifacts.new(..._params);
+        // console.log(Object.keys(artifacts.require(contractName)))
+        // console.log(artifacts.require(contractName))
         console.log(`${contractName}Addr: ${contractInstance.address}`)
-        let updatedContractInstance: any = await updateArtifacts(filePath, networkId, contractInstance, links);
+        let updatedContractInstance: any = await updateArtifacts(contractName, filePath, networkId, contractInstance, links);
         let updatedInstance = await updatedContractInstance.deployed();
         resolve(updatedInstance)
     })
 }
 
-async function updateArtifacts(filePath: string, networkId: number, contractInstance: any, links: any) {
+async function updateArtifacts(contractName: string, filePath: string, networkId: number, contractInstance: any, links: any) {
     return await new Promise(async (resolve, reject) => {
         let updatedContractInstance: any;
         fs.readFile(filePath, {encoding: 'utf8'}, (err: any,data:any) => {
@@ -43,9 +43,24 @@ async function updateArtifacts(filePath: string, networkId: number, contractInst
             fs.writeFile(filePath, string, (err: any) => {
                 if(err) return console.error(err);
                 updatedContractInstance = truffleContract(abi);
-                updatedContractInstance.setProvider(provider);
+                updatedContractInstance.setProvider(artifacts.require(contractName).currentProvider);
+                updatedContractInstance.defaults(artifacts.require(contractName).class_defaults)
                 resolve(updatedContractInstance)
             })
+        })
+    })
+}
+
+export async function getArtifacts(contractName: string) {
+    return await new Promise(async (resolve, reject) => {
+        const filePath = path.resolve(__dirname, '../../build/contracts/', `${contractName}.json`);
+        let updatedContractInstance: any;
+        fs.readFile(filePath, {encoding: 'utf8'}, async (err: any,data:any) => {
+            var abi = JSON.parse(data);
+            updatedContractInstance = truffleContract(abi);
+            updatedContractInstance.setProvider(artifacts.require(contractName).currentProvider);
+            updatedContractInstance.defaults(artifacts.require(contractName).class_defaults)
+            resolve(updatedContractInstance)
         })
     })
 }
