@@ -1,22 +1,22 @@
 pragma solidity ^0.5.15;
 pragma experimental ABIEncoderV2;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import "solidity-bytes-utils/contracts/BytesLib.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ITokenRegistry} from "./interfaces/ITokenRegistry.sol";
-import {IFraudProof} from "./interfaces/IFraudProof.sol";
-import {ParamManager} from "./libs/ParamManager.sol";
-import {Types} from "./libs/Types.sol";
-import {RollupUtils} from "./libs/RollupUtils.sol";
-import {ECVerify} from "./libs/ECVerify.sol";
-import {IncrementalTree} from "./IncrementalTree.sol";
-import {Logger} from "./logger.sol";
-import {POB} from "./POB.sol";
-import {MerkleTreeUtils as MTUtils} from "./MerkleTreeUtils.sol";
-import {NameRegistry as Registry} from "./NameRegistry.sol";
-import {Governance} from "./Governance.sol";
-import {DepositManager} from "./DepositManager.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
+import { IFraudProof } from "./interfaces/IFraudProof.sol";
+import { ParamManager } from "./libs/ParamManager.sol";
+import { Types } from "./libs/Types.sol";
+import { RollupUtils } from "./libs/RollupUtils.sol";
+import { ECVerify } from "./libs/ECVerify.sol";
+import { IncrementalTree } from "./IncrementalTree.sol";
+import { Logger } from "./logger.sol";
+import { POB } from "./POB.sol";
+import { MerkleTreeUtils as MTUtils } from "./MerkleTreeUtils.sol";
+import { NameRegistry as Registry } from "./NameRegistry.sol";
+import { Governance } from "./Governance.sol";
+import { DepositManager } from "./DepositManager.sol";
 
 contract RollupSetup {
     using SafeMath for uint256;
@@ -82,7 +82,11 @@ contract RollupHelpers is RollupSetup {
         return batches.length;
     }
 
-    function addNewBatch(bytes32 txRoot, bytes32 _updatedRoot) internal {
+    function addNewBatch(
+        bytes32 txRoot,
+        bytes32 _updatedRoot,
+        Types.Usage batchType
+    ) internal {
         Types.Batch memory newBatch = Types.Batch({
             stateRoot: _updatedRoot,
             accountRoot: accountsTree.getTreeRoot(),
@@ -91,7 +95,8 @@ contract RollupHelpers is RollupSetup {
             txRoot: txRoot,
             stakeCommitted: msg.value,
             finalisesOn: block.number + governance.TIME_TO_FINALISE(),
-            timestamp: now
+            timestamp: now,
+            batchType: batchType
         });
 
         batches.push(newBatch);
@@ -99,7 +104,8 @@ contract RollupHelpers is RollupSetup {
             newBatch.committer,
             txRoot,
             _updatedRoot,
-            batches.length - 1
+            batches.length - 1,
+            batchType
         );
     }
 
@@ -114,7 +120,8 @@ contract RollupHelpers is RollupSetup {
             txRoot: ZERO_BYTES32,
             stakeCommitted: msg.value,
             finalisesOn: block.number + governance.TIME_TO_FINALISE(),
-            timestamp: now
+            timestamp: now,
+            batchType: Types.Usage.Deposit
         });
 
         batches.push(newBatch);
@@ -122,7 +129,8 @@ contract RollupHelpers is RollupSetup {
             newBatch.committer,
             ZERO_BYTES32,
             _updatedRoot,
-            batches.length - 1
+            batches.length - 1,
+            Types.Usage.Deposit
         );
     }
 
@@ -163,7 +171,7 @@ contract RollupHelpers is RollupSetup {
             Types.Batch memory batch = batches[i];
 
             // calculate challeger's reward
-            uint _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
+            uint256 _challengerReward = (batch.stakeCommitted.mul(2)).div(3);
             challengerRewards += _challengerReward;
             burnedAmount += batch.stakeCommitted.sub(_challengerReward);
 
@@ -234,7 +242,7 @@ contract Rollup is RollupHelpers {
         fraudProof = IFraudProof(
             nameRegistry.getContractDetails(ParamManager.FRAUD_PROOF())
         );
-        addNewBatch(ZERO_BYTES32, genesisStateRoot);
+        addNewBatch(ZERO_BYTES32, genesisStateRoot, Types.Usage.Genesis);
     }
 
     /**
@@ -242,12 +250,11 @@ contract Rollup is RollupHelpers {
      * @param _txs Compressed transactions .
      * @param _updatedRoot New balance tree root after processing all the transactions
      */
-    function submitBatch(bytes[] calldata _txs, bytes32 _updatedRoot)
-        external
-        payable
-        onlyCoordinator
-        isNotRollingBack
-    {
+    function submitBatch(
+        bytes[] calldata _txs,
+        bytes32 _updatedRoot,
+        Types.Usage batchType
+    ) external payable onlyCoordinator isNotRollingBack {
         require(
             msg.value >= governance.STAKE_AMOUNT(),
             "Not enough stake committed"
@@ -262,7 +269,7 @@ contract Rollup is RollupHelpers {
             txRoot != ZERO_BYTES32,
             "Cannot submit a transaction with no transactions"
         );
-        addNewBatch(txRoot, _updatedRoot);
+        addNewBatch(txRoot, _updatedRoot, batchType);
     }
 
     /**
@@ -360,7 +367,7 @@ contract Rollup is RollupHelpers {
         Types.AccountMerkleProof memory _merkle_proof,
         bytes memory txBytes
     ) public view returns (bytes memory, bytes32 newRoot) {
-       Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes); 
+        Types.Transaction memory transaction = RollupUtils.TxFromBytes(txBytes);
         return fraudProof.ApplyTx(_merkle_proof, transaction);
     }
 
@@ -389,8 +396,8 @@ contract Rollup is RollupHelpers {
             bool
         )
     {
-       Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
-       _tx.signature = sig;
+        Types.Transaction memory _tx = RollupUtils.TxFromBytes(txBytes);
+        _tx.signature = sig;
         return
             fraudProof.processTx(
                 _balanceRoot,

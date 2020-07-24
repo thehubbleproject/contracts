@@ -1,19 +1,19 @@
 pragma solidity ^0.5.15;
 pragma experimental ABIEncoderV2;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ITokenRegistry} from "./interfaces/ITokenRegistry.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
 
-import {Types} from "./libs/Types.sol";
-import {RollupUtils} from "./libs/RollupUtils.sol";
-import {ParamManager} from "./libs/ParamManager.sol";
-import {ECVerify} from "./libs/ECVerify.sol";
+import { Types } from "./libs/Types.sol";
+import { RollupUtils } from "./libs/RollupUtils.sol";
+import { ParamManager } from "./libs/ParamManager.sol";
+import { ECVerify } from "./libs/ECVerify.sol";
 
-import {MerkleTreeUtils as MTUtils} from "./MerkleTreeUtils.sol";
-import {Governance} from "./Governance.sol";
-import {NameRegistry as Registry} from "./NameRegistry.sol";
+import { MerkleTreeUtils as MTUtils } from "./MerkleTreeUtils.sol";
+import { Governance } from "./Governance.sol";
+import { NameRegistry as Registry } from "./NameRegistry.sol";
 
 contract FraudProofSetup {
     using SafeMath for uint256;
@@ -337,14 +337,21 @@ contract FraudProof is FraudProofHelpers {
             _tx,
             accountProofs.from.accountIP.account
         );
-        if (err_code != Types.ErrorCode.NoError) return (ZERO_BYTES32, "", "", err_code, false);
+        if (err_code != Types.ErrorCode.NoError)
+            return (ZERO_BYTES32, "", "", err_code, false);
 
         // account holds the token type in the tx
         if (accountProofs.from.accountIP.account.tokenType != _tx.tokenType)
             // invalid state transition
             // needs to be slashed because the submitted transaction
             // had invalid token type
-            return (ZERO_BYTES32, "", "", Types.ErrorCode.BadFromTokenType, false);
+            return (
+                ZERO_BYTES32,
+                "",
+                "",
+                Types.ErrorCode.BadFromTokenType,
+                false
+            );
 
         bytes32 newRoot;
         bytes memory new_from_account;
@@ -360,10 +367,22 @@ contract FraudProof is FraudProofHelpers {
             // invalid state transition
             // needs to be slashed because the submitted transaction
             // had invalid token type
-            return (ZERO_BYTES32, "", "", Types.ErrorCode.BadToTokenType, false);
+            return (
+                ZERO_BYTES32,
+                "",
+                "",
+                Types.ErrorCode.BadToTokenType,
+                false
+            );
 
         (new_to_account, newRoot) = ApplyTx(accountProofs.to, _tx);
 
-        return (newRoot, new_from_account, new_to_account, Types.ErrorCode.NoError, true);
+        return (
+            newRoot,
+            new_from_account,
+            new_to_account,
+            Types.ErrorCode.NoError,
+            true
+        );
     }
 }

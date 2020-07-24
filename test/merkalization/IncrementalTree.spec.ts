@@ -96,57 +96,57 @@ contract("IncrementalTree", async function (accounts) {
 
   // test if we are able to create append a leaf
   it("create incremental MT and add 2 leaves", async function () {
-    // get mtlibInstance
-    var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        // get mtlibInstance
+        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
 
-    // get leaf to be inserted
-    var leaf = dataLeaves[0];
-    var coordinator =
-      "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563";
-    var zeroLeaf = await mtlibInstance.getRoot(0);
-    var zeroLeaf1 = await mtlibInstance.getRoot(1);
-    var zeroLeaf2 = await mtlibInstance.getRoot(2);
-    var zeroLeaf3 = await mtlibInstance.getRoot(3);
+        // get leaf to be inserted
+        var leaf = dataLeaves[0];
+        var coordinator =
+            "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563";
+        var zeroLeaf = await mtlibInstance.getRoot(0);
+        var zeroLeaf1 = await mtlibInstance.getRoot(1);
+        var zeroLeaf2 = await mtlibInstance.getRoot(2);
+        var zeroLeaf3 = await mtlibInstance.getRoot(3);
 
-    // append leaf to the tree
-    await IMTInstace.appendLeaf(leaf);
+        // append leaf to the tree
+        await IMTInstace.appendLeaf(leaf);
 
-    // validate if the leaf was inserted correctly
-    var root = await IMTInstace.getTreeRoot();
-    var path = "2";
-    var siblings = [coordinator, zeroLeaf1, zeroLeaf2, zeroLeaf3];
+        // validate if the leaf was inserted correctly
+        var root = await IMTInstace.getTreeRoot();
+        var path = "2";
+        var siblings = [coordinator, zeroLeaf1, zeroLeaf2, zeroLeaf3];
 
-    // call stateless merkle tree utils
-    var isValid = await mtlibInstance.verifyLeaf(root, leaf, path, siblings);
-    console.log("1")
-    expect(isValid).to.be.deep.eq(true);
-    console.log("2")
+        // call stateless merkle tree utils
+        var isValid = await mtlibInstance.verifyLeaf(
+            root,
+            leaf,
+            path,
+            siblings
+        );
+        expect(isValid).to.be.deep.eq(true);
 
-    // add another leaf to the tree
-    leaf = dataLeaves[1];
-    await IMTInstace.appendLeaf(leaf);
-    var nextLeafIndex = await IMTInstace.nextLeafIndex();
-    // verify that the new leaf was inserted correctly
-    var root1 = await IMTInstace.getTreeRoot();
+        // add another leaf to the tree
+        leaf = dataLeaves[1];
+        await IMTInstace.appendLeaf(leaf);
+        var nextLeafIndex = await IMTInstace.nextLeafIndex();
+        // verify that the new leaf was inserted correctly
+        var root1 = await IMTInstace.getTreeRoot();
 
-    var pathToSecondAccount = "3";
-    var siblings2 = [
-      dataLeaves[0],
-      utils.getParentLeaf(coordinator, coordinator),
-      zeroLeaf2,
-      zeroLeaf3,
-    ];
-    isValid = await mtlibInstance.verifyLeaf(
-      root1,
-      leaf,
-      pathToSecondAccount,
-      siblings2
-    );
-    console.log("3")
-    expect(isValid).to.be.deep.eq(true);
-    console.log("4")
-
-  });
+        var pathToSecondAccount = "3";
+        var siblings2 = [
+            dataLeaves[0],
+            utils.getParentLeaf(coordinator, coordinator),
+            zeroLeaf2,
+            zeroLeaf3
+        ];
+        isValid = await mtlibInstance.verifyLeaf(
+            root1,
+            leaf,
+            pathToSecondAccount,
+            siblings2
+        );
+        expect(isValid).to.be.deep.eq(true);
+    });
 });
 
 /**
@@ -155,7 +155,7 @@ contract("IncrementalTree", async function (accounts) {
  * @returns the big number as a string.
  */
 export const bnToHexString = (bn: BN): string => {
-  return "0x" + bn.toString("hex");
+    return "0x" + bn.toString("hex");
 };
 
 /**
@@ -164,5 +164,5 @@ export const bnToHexString = (bn: BN): string => {
  * @returns the buffer as a string.
  */
 export const bufToHexString = (buf: Buffer): string => {
-  return "0x" + buf.toString("hex");
+    return "0x" + buf.toString("hex");
 };

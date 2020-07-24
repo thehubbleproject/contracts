@@ -1,17 +1,17 @@
 pragma solidity ^0.5.15;
 pragma experimental ABIEncoderV2;
-import {IncrementalTree} from "./IncrementalTree.sol";
-import {Types} from "./libs/Types.sol";
-import {Logger} from "./logger.sol";
-import {RollupUtils} from "./libs/RollupUtils.sol";
-import {MerkleTreeUtils as MTUtils} from "./MerkleTreeUtils.sol";
-import {NameRegistry as Registry} from "./NameRegistry.sol";
-import {ITokenRegistry} from "./interfaces/ITokenRegistry.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ParamManager} from "./libs/ParamManager.sol";
-import {POB} from "./POB.sol";
-import {Governance} from "./Governance.sol";
-import {Rollup} from "./rollup.sol";
+import { IncrementalTree } from "./IncrementalTree.sol";
+import { Types } from "./libs/Types.sol";
+import { Logger } from "./logger.sol";
+import { RollupUtils } from "./libs/RollupUtils.sol";
+import { MerkleTreeUtils as MTUtils } from "./MerkleTreeUtils.sol";
+import { NameRegistry as Registry } from "./NameRegistry.sol";
+import { ITokenRegistry } from "./interfaces/ITokenRegistry.sol";
+import { IERC20 } from "./interfaces/IERC20.sol";
+import { ParamManager } from "./libs/ParamManager.sol";
+import { POB } from "./POB.sol";
+import { Governance } from "./Governance.sol";
+import { Rollup } from "./rollup.sol";
 
 contract DepositManager {
     MTUtils public merkleUtils;
@@ -20,7 +20,8 @@ contract DepositManager {
     mapping(uint256 => bytes32) pendingFilledSubtrees;
     uint256 public firstElement = 1;
     uint256 public lastElement = 0;
-
+    bytes32
+        public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
     uint256 public depositSubTreesPackaged = 0;
 
     function enqueue(bytes32 newDepositSubtree) public {
@@ -44,10 +45,6 @@ contract DepositManager {
     ITokenRegistry public tokenRegistry;
     IERC20 public tokenContract;
     IncrementalTree public accountsTree;
-
-    bytes32
-        public constant ZERO_BYTES32 = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
-
     modifier onlyCoordinator() {
         POB pobContract = POB(
             nameRegistry.getContractDetails(ParamManager.POB())
@@ -84,7 +81,7 @@ contract DepositManager {
     }
 
     function AddCoordinatorLeaves() internal {
-        // first leaf in the incremental tree belongs to the coordinator
+        // first 2 leaves belong to coordinator
         accountsTree.appendLeaf(ZERO_BYTES32);
         accountsTree.appendLeaf(ZERO_BYTES32);
     }
@@ -135,14 +132,8 @@ contract DepositManager {
             "token transfer not approved"
         );
 
-        // Add pubkey to PDA tree
-        Types.PDALeaf memory newPDALeaf;
-        newPDALeaf.pubkey = _pubkey;
-
         // returns leaf index upon successfull append
-        uint256 accID = accountsTree.appendLeaf(
-            RollupUtils.PDALeafToHash(newPDALeaf)
-        );
+        uint256 accID = accountsTree.appendDataBlock(_pubkey);
 
         // create a new account
         Types.UserAccount memory newAccount;
@@ -158,11 +149,7 @@ contract DepositManager {
         pendingDeposits.push(keccak256(accountBytes));
 
         // emit the event
-        logger.logDepositQueued(
-            accID,
-            _pubkey, 
-            accountBytes
-        );
+        logger.logDepositQueued(accID, _pubkey, accountBytes);
 
         queueNumber++;
         uint256 tmpDepositSubtreeHeight = 0;
