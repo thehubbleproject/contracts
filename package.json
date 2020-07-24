@@ -52,6 +52,7 @@
     "ethereumjs-wallet": "0.6.2",
     "ethers": "^4.0.46",
     "ganache-cli": "^6.9.1",
+    "minimist": "^1.2.5",
     "merkletreejs": "^0.1.7",
     "node-gyp": "^3.7.0",
     "solc": "^0.5.15",
