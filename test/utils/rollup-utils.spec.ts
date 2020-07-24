@@ -5,24 +5,29 @@ import { assert } from "chai";
 
 const rollupUtilsLib = artifacts.require("RollupUtils");
 
-var argv = require('minimist')(process.argv.slice(2));
+var argv = require("minimist")(process.argv.slice(2));
 
-contract("RollupUtils", async function (accounts) {
-  
+contract("RollupUtils", async function(accounts) {
     var wallets: any;
     let rollupUtils: any;
 
-    before(async function () {
+    before(async function() {
         wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
         if (argv.dn) {
-          const typesLib: any = await migrateUtils.deployAndUpdate("Types", {})
-          let libs = {
-            "Types":  typesLib.address
-          }
-          rollupUtils = await migrateUtils.deployAndUpdate("RollupUtils", libs)
-          console.log(rollupUtils.address)
+            const typesLib: any = await migrateUtils.deployAndUpdate(
+                "Types",
+                {}
+            );
+            let libs = {
+                Types: typesLib.address
+            };
+            rollupUtils = await migrateUtils.deployAndUpdate(
+                "RollupUtils",
+                libs
+            );
+            console.log(rollupUtils.address);
         } else {
-          rollupUtils = await rollupUtilsLib.deployed()
+            rollupUtils = await rollupUtilsLib.deployed();
         }
     });
     // test if we are able to create append a leaf

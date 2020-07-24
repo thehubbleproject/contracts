@@ -2,7 +2,7 @@ import * as walletHelper from "../../scripts/helpers/wallet";
 import * as migrateUtils from "../../scripts/helpers/migration";
 import * as utils from "../../scripts/helpers/utils";
 
-var argv = require('minimist')(process.argv.slice(2));
+var argv = require("minimist")(process.argv.slice(2));
 
 const MTLib = artifacts.require("MerkleTreeUtils");
 const IMT = artifacts.require("IncrementalTree.sol");
@@ -13,23 +13,23 @@ const RollupUtils = artifacts.require("RollupUtils");
 const Types = artifacts.require("Types");
 
 // Test all stateless operations
-contract("MerkleTreeUtils", async function (accounts) {
+contract("MerkleTreeUtils", async function(accounts) {
     var wallets: any;
     var firstDataBlock = utils.StringToBytes32("0x123");
     var secondDataBlock = utils.StringToBytes32("0x334");
     var thirdDataBlock = utils.StringToBytes32("0x4343");
     var fourthDataBlock = utils.StringToBytes32("0x334");
     var dataBlocks = [
-      firstDataBlock,
-      secondDataBlock,
-      thirdDataBlock,
-      fourthDataBlock,
+        firstDataBlock,
+        secondDataBlock,
+        thirdDataBlock,
+        fourthDataBlock
     ];
     var dataLeaves = [
-      utils.Hash(firstDataBlock),
-      utils.Hash(secondDataBlock),
-      utils.Hash(thirdDataBlock),
-      utils.Hash(fourthDataBlock),
+        utils.Hash(firstDataBlock),
+        utils.Hash(secondDataBlock),
+        utils.Hash(thirdDataBlock),
+        utils.Hash(fourthDataBlock)
     ];
 
     var coordinator = "0x9fB29AAc15b9A4B7F17c3385939b007540f4d791";
@@ -39,38 +39,61 @@ contract("MerkleTreeUtils", async function (accounts) {
     let paramManagerInstance: any;
     let nameRegistryInstance: any;
     let MTUtilsInstance: any;
-    before(async function () {
+    before(async function() {
         wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
         if (argv.dn) {
-          const typesLib: any = await migrateUtils.deployAndUpdate("Types", {})
-          const ECVerifyLibInstance: any = await migrateUtils.deployAndUpdate("ECVerify", {})
-          const rollupUtilsLibInstance: any = await migrateUtils.deployAndUpdate("RollupUtils", {})
-          paramManagerInstance = await migrateUtils.deployAndUpdate("ParamManager", {})
-          nameRegistryInstance = await migrateUtils.deployAndUpdate("NameRegistry", {})
-      
-          let governanceInstance: any = await migrateUtils.deployAndUpdate("Governance", {}, [max_depth, maxDepositSubtreeDepth]);
-      
-          await nameRegistryInstance.registerName(
-            await paramManagerInstance.Governance(),
-            governanceInstance.address
-          )
-      
-          let libLinksMTU = {
-            "ECVerify" : ECVerifyLibInstance.address,
-            "ParamManager": paramManagerInstance.address,
-            "RollupUtils": rollupUtilsLibInstance.address,
-            "Types": typesLib.address,
-          }
-          MTUtilsInstance = await migrateUtils.deployAndUpdate("MerkleTreeUtils", libLinksMTU, [nameRegistryInstance.address])
-      
-          await nameRegistryInstance.registerName(
-            await paramManagerInstance.MERKLE_UTILS(),
-            MTUtilsInstance.address
-          )
-      
-          console.log("MTUtilsInstance.address:", MTUtilsInstance.address)
+            const typesLib: any = await migrateUtils.deployAndUpdate(
+                "Types",
+                {}
+            );
+            const ECVerifyLibInstance: any = await migrateUtils.deployAndUpdate(
+                "ECVerify",
+                {}
+            );
+            const rollupUtilsLibInstance: any = await migrateUtils.deployAndUpdate(
+                "RollupUtils",
+                {}
+            );
+            paramManagerInstance = await migrateUtils.deployAndUpdate(
+                "ParamManager",
+                {}
+            );
+            nameRegistryInstance = await migrateUtils.deployAndUpdate(
+                "NameRegistry",
+                {}
+            );
+
+            let governanceInstance: any = await migrateUtils.deployAndUpdate(
+                "Governance",
+                {},
+                [max_depth, maxDepositSubtreeDepth]
+            );
+
+            await nameRegistryInstance.registerName(
+                await paramManagerInstance.Governance(),
+                governanceInstance.address
+            );
+
+            let libLinksMTU = {
+                ECVerify: ECVerifyLibInstance.address,
+                ParamManager: paramManagerInstance.address,
+                RollupUtils: rollupUtilsLibInstance.address,
+                Types: typesLib.address
+            };
+            MTUtilsInstance = await migrateUtils.deployAndUpdate(
+                "MerkleTreeUtils",
+                libLinksMTU,
+                [nameRegistryInstance.address]
+            );
+
+            await nameRegistryInstance.registerName(
+                await paramManagerInstance.MERKLE_UTILS(),
+                MTUtilsInstance.address
+            );
+
+            console.log("MTUtilsInstance.address:", MTUtilsInstance.address);
         } else {
-          MTUtilsInstance = await MTLib.deployed();
+            MTUtilsInstance = await MTLib.deployed();
         }
     });
 
@@ -86,7 +109,10 @@ contract("MerkleTreeUtils", async function (accounts) {
             tempDataLeaves[i] =
                 "0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563";
         }
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
         var rootFromContract = await mtlibInstance.getMerkleRootFromLeaves(
             tempDataLeaves
         );
@@ -107,7 +133,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     it("utils hash should be the same as keccak hash", async function() {
         var data = utils.StringToBytes32("0x123");
 
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
         var hash = utils.Hash(data);
 
         var keccakHash = await mtlibInstance.keecakHash(data);
@@ -115,7 +144,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("test get parent", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         let localHash = utils.getParentLeaf(firstDataBlock, secondDataBlock);
         let contractHash = await mtlibInstance.getParent(
@@ -127,7 +159,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("test index to path", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var result = await mtlibInstance.pathToIndex("10", 2);
         expect(result.toNumber()).to.be.deep.eq(2);
@@ -146,7 +181,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[LEAF] [STATELESS] verifying correct proof", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
 
@@ -170,7 +208,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[DATABLOCK] [STATELESS] verifying correct proof", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
 
@@ -189,7 +230,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[LEAF] [STATELESS] verifying proof with wrong path", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
         // create merkle tree and get root
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
         var siblings: Array<string> = [
@@ -208,7 +252,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[DATABLOCK] [STATELESS] verifying proof with wrong path", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         // create merkle tree and get root
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
@@ -229,7 +276,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[LEAF] [STATELESS] verifying other leaves", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
 
@@ -249,7 +299,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[DATABLOCK] [STATELESS] verifying other leaves", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
 
@@ -269,7 +322,10 @@ contract("MerkleTreeUtils", async function (accounts) {
     });
 
     it("[DATABLOCK] [STATELESS] path greater than depth", async function() {
-        var mtlibInstance = await utils.getMerkleTreeUtils(nameRegistryInstance, paramManagerInstance);
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         var root = await mtlibInstance.getMerkleRoot(dataBlocks);
 

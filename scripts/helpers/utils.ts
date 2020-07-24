@@ -25,8 +25,8 @@ export function Hash(data: string) {
 }
 
 export async function checkAddress() {
-  var rollupUtils = await RollupUtils.deployed();
-  return rollupUtils.address;
+    var rollupUtils = await RollupUtils.deployed();
+    return rollupUtils.address;
 }
 
 export function PubKeyHash(pubkey: string) {
@@ -137,9 +137,14 @@ export async function getZeroHash(zeroValue: any) {
     return ethers.utils.keccak256(abiCoder.encode(["uint256"], [zeroValue]));
 }
 
-export async function getMerkleTreeUtils(nameRegistryInstance?: any, paramManager?: any) {
+export async function getMerkleTreeUtils(
+    nameRegistryInstance?: any,
+    paramManager?: any
+) {
     // get deployed name registry instance
-    nameRegistryInstance = !nameRegistryInstance ? await nameRegistry.deployed() : nameRegistryInstance;
+    nameRegistryInstance = !nameRegistryInstance
+        ? await nameRegistry.deployed()
+        : nameRegistryInstance;
 
     // get deployed parama manager instance
     paramManager = !paramManager ? await ParamManager.deployed() : paramManager;
@@ -153,8 +158,10 @@ export async function getMerkleTreeUtils(nameRegistryInstance?: any, paramManage
 }
 
 export async function getRollupUtils(rollupUtilsInstance?: any) {
-  var rollupUtils: any = !rollupUtilsInstance ? await rollupUtils.deployed() : rollupUtilsInstance;
-  return rollupUtils;
+    var rollupUtils: any = !rollupUtilsInstance
+        ? await rollupUtils.deployed()
+        : rollupUtilsInstance;
+    return rollupUtils;
 }
 
 export async function getMerkleRoot(dataLeaves: any, maxDepth: any) {
@@ -199,7 +206,9 @@ export async function genMerkleRootFromSiblings(
 }
 
 export async function getTokenRegistry(TokenRegistryInstance?: any) {
-  return !TokenRegistryInstance ? TokenRegistry.deployed() : TokenRegistryInstance;
+    return !TokenRegistryInstance
+        ? TokenRegistry.deployed()
+        : TokenRegistryInstance;
 }
 
 export async function compressTx(
@@ -229,8 +238,14 @@ export async function compressTx(
     return result;
 }
 
-export async function signTx(tx: Transaction, wallet: any, rollupUtilsInstance?: any) {
-    const RollupUtilsInstance = !rollupUtilsInstance? await RollupUtils.deployed() : rollupUtilsInstance;
+export async function signTx(
+    tx: Transaction,
+    wallet: any,
+    rollupUtilsInstance?: any
+) {
+    const RollupUtilsInstance = !rollupUtilsInstance
+        ? await RollupUtils.deployed()
+        : rollupUtilsInstance;
     const dataToSign = await RollupUtilsInstance.getTxSignBytes(
         tx.fromIndex,
         tx.toIndex,
@@ -246,7 +261,9 @@ export async function signTx(tx: Transaction, wallet: any, rollupUtilsInstance?:
 }
 
 export async function TxToBytes(tx: Transaction, rollupUtilsInstance?: any) {
-    const RollupUtilsInstance = !rollupUtilsInstance? await RollupUtils.deployed() : rollupUtilsInstance;
+    const RollupUtilsInstance = !rollupUtilsInstance
+        ? await RollupUtils.deployed()
+        : rollupUtilsInstance;
     var txBytes = await RollupUtilsInstance.BytesFromTxDeconstructed(
         tx.fromIndex,
         tx.toIndex,
@@ -258,8 +275,14 @@ export async function TxToBytes(tx: Transaction, rollupUtilsInstance?: any) {
     return txBytes;
 }
 
-export async function falseProcessTx(_tx: any, accountProofs: any, fraudProof?: any) {
-    const fraudProofInstance = !fraudProof ? await FraudProof.deployed() : fraudProof;
+export async function falseProcessTx(
+    _tx: any,
+    accountProofs: any,
+    fraudProof?: any
+) {
+    const fraudProofInstance = !fraudProof
+        ? await FraudProof.deployed()
+        : fraudProof;
     const _to_merkle_proof = accountProofs.to;
     const new_to_txApply = await fraudProofInstance.ApplyTx(
         _to_merkle_proof,
@@ -268,8 +291,14 @@ export async function falseProcessTx(_tx: any, accountProofs: any, fraudProof?: 
     return new_to_txApply.newRoot;
 }
 
-export async function compressAndSubmitBatch(tx: Transaction, newRoot: string, rollupCore?: any) {
-    const rollupCoreInstance = !rollupCore ? await RollupCore.deployed() : rollupCore;
+export async function compressAndSubmitBatch(
+    tx: Transaction,
+    newRoot: string,
+    rollupCore?: any
+) {
+    const rollupCoreInstance = !rollupCore
+        ? await RollupCore.deployed()
+        : rollupCore;
     const compressedTx = await compressTx(
         tx.fromIndex,
         tx.toIndex,
