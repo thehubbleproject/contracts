@@ -1,15 +1,35 @@
 import * as utils from "../../scripts/helpers/utils";
+import * as migrateUtils from "../../scripts/helpers/migration";
 import * as walletHelper from "../..//scripts/helpers/wallet";
 import { assert } from "chai";
 
-const RollupUtils = artifacts.require("RollupUtils");
+const rollupUtilsLib = artifacts.require("RollupUtils");
+
+var argv = require("minimist")(process.argv.slice(2));
 
 contract("RollupUtils", async function(accounts) {
     var wallets: any;
+    let rollupUtils: any;
+
     before(async function() {
         wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
+        if (argv.dn) {
+            const typesLib: any = await migrateUtils.deployAndUpdate(
+                "Types",
+                {}
+            );
+            let libs = {
+                Types: typesLib.address
+            };
+            rollupUtils = await migrateUtils.deployAndUpdate(
+                "RollupUtils",
+                libs
+            );
+            console.log(rollupUtils.address);
+        } else {
+            rollupUtils = await rollupUtilsLib.deployed();
+        }
     });
-
     // test if we are able to create append a leaf
     /* it("test if account hash is correctly generated", async function () { */
     /*   var Alice = { */
@@ -71,7 +91,6 @@ contract("RollupUtils", async function(accounts) {
     // });
 
     it("test account encoding and decoding", async function() {
-        var rollupUtils = await RollupUtils.deployed();
         var account = {
             ID: 1,
             tokenType: 2,

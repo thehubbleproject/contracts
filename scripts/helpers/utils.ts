@@ -9,6 +9,8 @@ const RollupUtils = artifacts.require("RollupUtils");
 const FraudProof = artifacts.require("FraudProof");
 const RollupCore = artifacts.require("Rollup");
 
+import * as migrateUtils from "../../scripts/helpers/migration";
+
 // returns parent node hash given child node hashes
 export function getParentLeaf(left: string, right: string) {
     var abiCoder = ethers.utils.defaultAbiCoder;
@@ -20,6 +22,11 @@ export function getParentLeaf(left: string, right: string) {
 
 export function Hash(data: string) {
     return ethers.utils.keccak256(data);
+}
+
+export async function checkAddress() {
+    var rollupUtils = await RollupUtils.deployed();
+    return rollupUtils.address;
 }
 
 export function PubKeyHash(pubkey: string) {
@@ -130,13 +137,17 @@ export async function getZeroHash(zeroValue: any) {
     return ethers.utils.keccak256(abiCoder.encode(["uint256"], [zeroValue]));
 }
 
-export async function getMerkleTreeUtils() {
+export async function getMerkleTreeUtils(
+    nameRegistryInstance?: any,
+    paramManager?: any
+) {
     // get deployed name registry instance
-    var nameRegistryInstance = await nameRegistry.deployed();
+    nameRegistryInstance = !nameRegistryInstance
+        ? await nameRegistry.deployed()
+        : nameRegistryInstance;
 
     // get deployed parama manager instance
-    var paramManager = await ParamManager.deployed();
-
+    paramManager = !paramManager ? await ParamManager.deployed() : paramManager;
     // get accounts tree key
     var merkleTreeUtilKey = await paramManager.MERKLE_UTILS();
 
@@ -146,8 +157,10 @@ export async function getMerkleTreeUtils() {
     return MerkleTreeUtils.at(merkleTreeUtilsAddr);
 }
 
-export async function getRollupUtils() {
-    var rollupUtils: any = await rollupUtils.deployed();
+export async function getRollupUtils(rollupUtilsInstance?: any) {
+    var rollupUtils: any = !rollupUtilsInstance
+        ? await rollupUtils.deployed()
+        : rollupUtilsInstance;
     return rollupUtils;
 }
 
@@ -192,8 +205,10 @@ export async function genMerkleRootFromSiblings(
     return computedNode;
 }
 
-export async function getTokenRegistry() {
-    return TokenRegistry.deployed();
+export async function getTokenRegistry(TokenRegistryInstance?: any) {
+    return !TokenRegistryInstance
+        ? TokenRegistry.deployed()
+        : TokenRegistryInstance;
 }
 
 export async function compressTx(
@@ -223,8 +238,14 @@ export async function compressTx(
     return result;
 }
 
-export async function signTx(tx: Transaction, wallet: any) {
-    const RollupUtilsInstance = await RollupUtils.deployed();
+export async function signTx(
+    tx: Transaction,
+    wallet: any,
+    rollupUtilsInstance?: any
+) {
+    const RollupUtilsInstance = !rollupUtilsInstance
+        ? await RollupUtils.deployed()
+        : rollupUtilsInstance;
     const dataToSign = await RollupUtilsInstance.getTxSignBytes(
         tx.fromIndex,
         tx.toIndex,
@@ -239,8 +260,10 @@ export async function signTx(tx: Transaction, wallet: any) {
     return ethUtils.toRpcSig(signature.v, signature.r, signature.s);
 }
 
-export async function TxToBytes(tx: Transaction) {
-    const RollupUtilsInstance = await RollupUtils.deployed();
+export async function TxToBytes(tx: Transaction, rollupUtilsInstance?: any) {
+    const RollupUtilsInstance = !rollupUtilsInstance
+        ? await RollupUtils.deployed()
+        : rollupUtilsInstance;
     var txBytes = await RollupUtilsInstance.BytesFromTxDeconstructed(
         tx.fromIndex,
         tx.toIndex,
@@ -252,8 +275,14 @@ export async function TxToBytes(tx: Transaction) {
     return txBytes;
 }
 
-export async function falseProcessTx(_tx: any, accountProofs: any) {
-    const fraudProofInstance = await FraudProof.deployed();
+export async function falseProcessTx(
+    _tx: any,
+    accountProofs: any,
+    fraudProof?: any
+) {
+    const fraudProofInstance = !fraudProof
+        ? await FraudProof.deployed()
+        : fraudProof;
     const _to_merkle_proof = accountProofs.to;
     const new_to_txApply = await fraudProofInstance.ApplyTx(
         _to_merkle_proof,
@@ -262,8 +291,14 @@ export async function falseProcessTx(_tx: any, accountProofs: any) {
     return new_to_txApply.newRoot;
 }
 
-export async function compressAndSubmitBatch(tx: Transaction, newRoot: string) {
-    const rollupCoreInstance = await RollupCore.deployed();
+export async function compressAndSubmitBatch(
+    tx: Transaction,
+    newRoot: string,
+    rollupCore?: any
+) {
+    const rollupCoreInstance = !rollupCore
+        ? await RollupCore.deployed()
+        : rollupCore;
     const compressedTx = await compressTx(
         tx.fromIndex,
         tx.toIndex,

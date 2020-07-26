@@ -1,10 +1,21 @@
-const MTLib = artifacts.require("MerkleTreeUtils");
-const IMT = artifacts.require("IncrementalTree");
-const nameRegistry = artifacts.require("NameRegistry");
-const ParamManager = artifacts.require("ParamManager");
 import * as walletHelper from "../../scripts/helpers/wallet";
+import * as migrateUtils from "../../scripts/helpers/migration";
 import * as utils from "../../scripts/helpers/utils";
 const BN = require("bn.js");
+
+var argv = require("minimist")(process.argv.slice(2));
+
+const ECVerifyLib = artifacts.require("ECVerify");
+const paramManagerLib = artifacts.require("ParamManager");
+const rollupUtilsLib = artifacts.require("RollupUtils");
+const Types = artifacts.require("Types");
+
+// Contracts Deployer
+const governanceContract = artifacts.require("Governance");
+const MTUtilsContract = artifacts.require("MerkleTreeUtils");
+const incrementalTreeContract = artifacts.require("IncrementalTree");
+
+const nameRegistryContract = artifacts.require("NameRegistry");
 
 contract("IncrementalTree", async function(accounts) {
     var wallets: any;
@@ -26,17 +37,95 @@ contract("IncrementalTree", async function(accounts) {
         utils.Hash(fourthDataBlock)
     ];
 
+    var coordinator = "0x9fB29AAc15b9A4B7F17c3385939b007540f4d791";
+    var max_depth = 4;
+    var maxDepositSubtreeDepth = 1;
+
+    let paramManagerInstance: any;
+    let nameRegistryInstance: any;
+    let MTUtilsInstance: any;
+    let IMTInstace: any;
     before(async function() {
         wallets = walletHelper.generateFirstWallets(walletHelper.mnemonics, 10);
+        if (argv.dn) {
+            const typesLib: any = await migrateUtils.deployAndUpdate(
+                "Types",
+                {}
+            );
+            const ECVerifyLibInstance: any = await migrateUtils.deployAndUpdate(
+                "ECVerify",
+                {}
+            );
+            const rollupUtilsLibInstance: any = await migrateUtils.deployAndUpdate(
+                "RollupUtils",
+                {}
+            );
+            paramManagerInstance = await migrateUtils.deployAndUpdate(
+                "ParamManager",
+                {}
+            );
+            nameRegistryInstance = await migrateUtils.deployAndUpdate(
+                "NameRegistry",
+                {}
+            );
+
+            let governanceInstance: any = await migrateUtils.deployAndUpdate(
+                "Governance",
+                {},
+                [max_depth, maxDepositSubtreeDepth]
+            );
+
+            await nameRegistryInstance.registerName(
+                await paramManagerInstance.Governance(),
+                governanceInstance.address
+            );
+
+            let libLinksMTU = {
+                ECVerify: ECVerifyLibInstance.address,
+                ParamManager: paramManagerInstance.address,
+                RollupUtils: rollupUtilsLibInstance.address,
+                Types: typesLib.address
+            };
+            MTUtilsInstance = await migrateUtils.deployAndUpdate(
+                "MerkleTreeUtils",
+                libLinksMTU,
+                [nameRegistryInstance.address]
+            );
+
+            await nameRegistryInstance.registerName(
+                await paramManagerInstance.MERKLE_UTILS(),
+                MTUtilsInstance.address
+            );
+
+            console.log("MTUtilsInstance.address:", MTUtilsInstance.address);
+
+            let libLinksIMT = {
+                ParamManager: paramManagerInstance.address
+            };
+            IMTInstace = await migrateUtils.deployAndUpdate(
+                "IncrementalTree",
+                libLinksIMT,
+                [nameRegistryInstance.address]
+            );
+
+            await nameRegistryInstance.registerName(
+                await paramManagerInstance.ACCOUNTS_TREE(),
+                IMTInstace.address
+            );
+
+            console.log("IMTInstace.address:", IMTInstace.address);
+        } else {
+            IMTInstace = await incrementalTreeContract.deployed();
+        }
     });
 
     // test if we are able to create append a leaf
     it("create incremental MT and add 2 leaves", async function() {
         // get mtlibInstance
-        var mtlibInstance = await utils.getMerkleTreeUtils();
-
-        // get IMT tree instance
-        let IMTInstace = await IMT.deployed();
+        var mtlibInstance = await utils.getMerkleTreeUtils(
+            nameRegistryInstance,
+            paramManagerInstance
+        );
 
         // get leaf to be inserted
         var leaf = dataLeaves[0];
