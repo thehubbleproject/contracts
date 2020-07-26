@@ -8,7 +8,6 @@ export async function deployAndUpdate(
     libs: any,
     params?: any
 ) {
-    return await new Promise(async (resolve, reject) => {
         var networkId = await web3.eth.net.getId();
         let contractArtifacts = artifacts.require(contractName);
         let links: any = {};
@@ -37,9 +36,8 @@ export async function deployAndUpdate(
             contractInstance,
             links
         );
-        let updatedInstance = await updatedContractInstance.deployed();
-        resolve(updatedInstance);
-    });
+    let updateArtifact = await updatedContractInstance.deployed();
+    return updateArtifact;
 }
 
 async function updateArtifacts(
@@ -51,7 +49,7 @@ async function updateArtifacts(
 ) {
     return await new Promise(async (resolve, reject) => {
         let updatedContractInstance: any;
-        fs.readFile(filePath, { encoding: "utf8" }, (err: any, data: any) => {
+        await fs.readFile(filePath, { encoding: "utf8" }, (err: any, data: any) => {
             var abi = JSON.parse(data);
             abi.networks[networkId] = {
                 events: {},
